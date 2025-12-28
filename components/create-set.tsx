@@ -1,0 +1,106 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { ArrowLeft, Plus, Save } from "lucide-react"
+import { useSets } from "@/hooks/use-sets"
+
+type CreateSetProps = {
+  onBack: () => void
+}
+
+export function CreateSet({ onBack }: CreateSetProps) {
+  const { addSet } = useSets()
+  const [setName, setSetName] = useState("")
+  const [cards, setCards] = useState<{ question: string; answer: string }[]>([])
+  const [currentQuestion, setCurrentQuestion] = useState("")
+  const [currentAnswer, setCurrentAnswer] = useState("")
+
+  const handleAddCard = () => {
+    if (currentQuestion.trim() && currentAnswer.trim()) {
+      setCards([...cards, { question: currentQuestion, answer: currentAnswer }])
+      setCurrentQuestion("")
+      setCurrentAnswer("")
+    }
+  }
+
+  const handleSaveSet = () => {
+    if (setName.trim() && cards.length > 0) {
+      addSet({
+        id: Date.now().toString(),
+        name: setName,
+        cards,
+      })
+      onBack()
+    }
+  }
+
+  return (
+    <div className="min-h-screen p-6">
+      <div className="max-w-3xl mx-auto">
+        <Button variant="ghost" onClick={onBack} className="mb-6">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Home
+        </Button>
+
+        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Create Flashcard Set
+        </h1>
+
+        <Card className="p-6 mb-6 bg-white shadow-lg">
+          <Input
+            placeholder="Set Name (e.g., Spanish Vocab, History Quiz)"
+            value={setName}
+            onChange={(e) => setSetName(e.target.value)}
+            className="text-lg mb-6"
+          />
+
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Question"
+              value={currentQuestion}
+              onChange={(e) => setCurrentQuestion(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <Textarea
+              placeholder="Answer"
+              value={currentAnswer}
+              onChange={(e) => setCurrentAnswer(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <Button onClick={handleAddCard} className="w-full bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Card
+            </Button>
+          </div>
+        </Card>
+
+        {cards.length > 0 && (
+          <Card className="p-6 mb-6 bg-white shadow-lg">
+            <h3 className="font-bold text-lg mb-4">Cards in this set ({cards.length})</h3>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {cards.map((card, index) => (
+                <div key={index} className="p-3 bg-secondary rounded-lg">
+                  <p className="font-medium text-sm text-muted-foreground">Q: {card.question}</p>
+                  <p className="text-sm">A: {card.answer}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        <Button
+          onClick={handleSaveSet}
+          disabled={!setName.trim() || cards.length === 0}
+          className="w-full h-14 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+        >
+          <Save className="w-5 h-5 mr-2" />
+          Save Set
+        </Button>
+      </div>
+    </div>
+  )
+}
