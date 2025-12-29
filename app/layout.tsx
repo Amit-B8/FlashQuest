@@ -3,6 +3,8 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+// 1. IMPORT THE DEV TOOLS COMPONENT
+import { DevTools } from "@/components/dev-tools" 
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -37,6 +39,9 @@ export default function RootLayout({
           <p className="font-medium">Built with Next.js and Tailwind CSS. © 2025 Amit Boodhoo.</p>
         </footer>
         {/* ----------------------- */}
+
+        {/* 2. ADD THIS LINE HERE so the button actually shows up */}
+        <DevTools />
 
         <Analytics />
       </body>
