@@ -13,7 +13,9 @@ type CreateSetProps = {
 }
 
 export function CreateSet({ onBack }: CreateSetProps) {
-  const { addSet } = useSets()
+  // 1. Destructure 'sets' so we can check against existing ones
+  const { addSet, sets } = useSets()
+  
   const [setName, setSetName] = useState("")
   const [cards, setCards] = useState<{ question: string; answer: string }[]>([])
   const [currentQuestion, setCurrentQuestion] = useState("")
@@ -29,9 +31,23 @@ export function CreateSet({ onBack }: CreateSetProps) {
 
   const handleSaveSet = () => {
     if (setName.trim() && cards.length > 0) {
+      const formattedName = setName.trim()
+
+      // 2. CHECK FOR DUPLICATES
+      // We look for any set that has the EXACT same name (case-insensitive)
+      const nameExists = sets.some(
+        (s) => s.name.toLowerCase() === formattedName.toLowerCase()
+      )
+
+      if (nameExists) {
+        alert("A set with this name already exists! Please choose a different name.")
+        return // Stop the function here so we don't save
+      }
+
+      // 3. Save if valid
       addSet({
         id: Date.now().toString(),
-        name: setName,
+        name: formattedName,
         cards,
       })
       onBack()
@@ -42,8 +58,7 @@ export function CreateSet({ onBack }: CreateSetProps) {
     <div className="min-h-screen p-6 relative z-10">
       <div className="max-w-3xl mx-auto">
         
-        {/* --- NEW: Header Container (The Safe Box) --- */}
-        {/* This white box ensures the text is readable on dark backgrounds */}
+        {/* Header Container (The Safe Box) */}
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-8 border border-white/50">
           <Button variant="ghost" onClick={onBack} className="mb-2 pl-0 hover:bg-transparent">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -53,7 +68,6 @@ export function CreateSet({ onBack }: CreateSetProps) {
             Create Flashcard Set
           </h1>
         </div>
-        {/* --------------------------------------------- */}
 
         <Card className="p-6 mb-6 bg-white/95 backdrop-blur shadow-lg">
           <Input

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Check, X, Trophy, Trash2 } from "lucide-react"
+// 1. ADD: Pencil icon
+import { ArrowLeft, Check, X, Trophy, Trash2, Pencil } from "lucide-react"
 import { useSets } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
 
@@ -12,7 +13,8 @@ type QuizModeProps = {
 }
 
 export function QuizMode({ onBack }: QuizModeProps) {
-  const { sets, removeSet } = useSets()
+  // 2. GET: renameSet from the hook
+  const { sets, removeSet, renameSet } = useSets()
   const { coins, addCoins } = useCoins()
 
   const [selectedSet, setSelectedSet] = useState<string | null>(null)
@@ -23,7 +25,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
 
   const currentSet = sets.find((s) => s.id === selectedSet)
 
-  // Shuffle cards when a set is selected
   useEffect(() => {
     if (currentSet) {
       const shuffled = [...currentSet.cards].sort(() => Math.random() - 0.5)
@@ -34,8 +35,32 @@ export function QuizMode({ onBack }: QuizModeProps) {
     }
   }, [currentSet])
 
+  // --- NEW: EDIT HANDLER ---
+  const handleEditSet = (e: React.MouseEvent, id: string, currentName: string) => {
+    e.stopPropagation() // Stop click from starting the quiz
+    
+    // Simple prompt to get new name
+    const newName = prompt("Enter a new name for this set:", currentName)
+    
+    if (newName && newName.trim().length > 0) {
+      const formattedName = newName.trim()
+      
+      // Check for duplicates (excluding itself)
+      const nameExists = sets.some(
+        s => s.name.toLowerCase() === formattedName.toLowerCase() && s.id !== id
+      )
+      
+      if (nameExists) {
+        alert("A set with this name already exists!")
+        return
+      }
+
+      renameSet(id, formattedName)
+    }
+  }
+
   const handleCorrect = () => {
-    addCoins(1) // Immediate reward: 1 coin per right answer
+    addCoins(1) 
     setScore(score + 1)
     nextCard()
   }
@@ -49,7 +74,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
       setCurrentCardIndex(currentCardIndex + 1)
       setShowAnswer(false)
     } else {
-      // Loop back to start (or you could show a summary screen here)
       const shuffled = [...shuffledCards].sort(() => Math.random() - 0.5)
       setShuffledCards(shuffled)
       setCurrentCardIndex(0)
@@ -57,13 +81,12 @@ export function QuizMode({ onBack }: QuizModeProps) {
     }
   }
 
-  // --- 1. SELECTION SCREEN ---
+  // --- SELECTION SCREEN ---
   if (!selectedSet) {
     return (
       <div className="min-h-screen p-6 relative z-10">
         <div className="max-w-3xl mx-auto">
           
-          {/* SAFE HEADER BOX */}
           <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-8 border border-white/50">
             <Button variant="ghost" onClick={onBack} className="mb-2 pl-0 hover:bg-transparent">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -87,26 +110,41 @@ export function QuizMode({ onBack }: QuizModeProps) {
                     className="p-6 bg-white/95 backdrop-blur shadow-md hover:shadow-xl transition-all cursor-pointer border-l-4 border-l-purple-500"
                     onClick={() => setSelectedSet(set.id)}
                   >
-                    <div className="pr-12">
+                    <div className="pr-24"> {/* Extra padding for buttons */}
                       <h3 className="text-xl font-bold mb-1 text-slate-800">{set.name}</h3>
                       <p className="text-sm text-slate-500">{set.cards.length} cards</p>
                     </div>
                   </Card>
 
-                  {/* Delete Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4 text-gray-400 hover:text-red-600 hover:bg-red-50 z-20"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (confirm("Are you sure you want to delete this set?")) {
-                        removeSet(set.id)
-                      }
-                    }}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
+                  {/* ACTION BUTTONS */}
+                  <div className="absolute top-4 right-4 flex gap-2 z-20">
+                    
+                    {/* 3. NEW: Edit Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                      onClick={(e) => handleEditSet(e, set.id, set.name)}
+                    >
+                      <Pencil className="w-5 h-5" />
+                    </Button>
+
+                    {/* Delete Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm("Are you sure you want to delete this set?")) {
+                          removeSet(set.id)
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  </div>
+
                 </div>
               ))
             )}
@@ -116,22 +154,18 @@ export function QuizMode({ onBack }: QuizModeProps) {
     )
   }
 
-  // --- 2. GAME SCREEN ---
+  // --- GAME SCREEN (Unchanged) ---
   if (shuffledCards.length === 0) return null
-
   const currentCard = shuffledCards[currentCardIndex]
-
+  
   return (
     <div className="min-h-screen p-6 relative z-10">
       <div className="max-w-2xl mx-auto">
-        
-        {/* SAFE HEADER BOX */}
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-6 border border-white/50">
           <Button variant="ghost" onClick={() => setSelectedSet(null)} className="mb-2 pl-0 hover:bg-transparent">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Sets
           </Button>
-
           <div className="flex justify-between items-end">
             <div>
               <p className="text-sm text-slate-500 font-medium">
@@ -139,7 +173,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
               </p>
               <p className="text-2xl font-bold text-slate-800">Score: {score}</p>
             </div>
-            
             <div className="bg-yellow-100 px-3 py-1 rounded-full border border-yellow-300 flex items-center gap-2">
               <Trophy className="w-4 h-4 text-yellow-600" />
               <span className="font-bold text-yellow-900 text-sm">{coins} coins</span>
@@ -147,7 +180,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
           </div>
         </div>
 
-        {/* THE CARD (Simple, No Flip) */}
         <Card className="p-8 bg-white/95 backdrop-blur shadow-xl mb-6 min-h-[300px] flex flex-col justify-center border-t-4 border-t-blue-500">
           <p className="text-sm text-slate-400 uppercase tracking-widest mb-4 font-bold">Question</p>
           <p className="text-3xl font-bold mb-8 text-slate-900 text-balance">{currentCard.question}</p>
@@ -165,7 +197,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
                 <p className="text-sm text-green-700 uppercase tracking-widest mb-1 font-bold">Answer</p>
                 <p className="text-2xl font-bold text-green-900">{currentCard.answer}</p>
               </div>
-              
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={handleWrong}
