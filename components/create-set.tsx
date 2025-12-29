@@ -39,18 +39,23 @@ export function CreateSet({ onBack }: CreateSetProps) {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6 relative z-10">
       <div className="max-w-3xl mx-auto">
-        <Button variant="ghost" onClick={onBack} className="mb-6">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
+        
+        {/* --- NEW: Header Container (The Safe Box) --- */}
+        {/* This white box ensures the text is readable on dark backgrounds */}
+        <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-8 border border-white/50">
+          <Button variant="ghost" onClick={onBack} className="mb-2 pl-0 hover:bg-transparent">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Create Flashcard Set
+          </h1>
+        </div>
+        {/* --------------------------------------------- */}
 
-        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Create Flashcard Set
-        </h1>
-
-        <Card className="p-6 mb-6 bg-white shadow-lg">
+        <Card className="p-6 mb-6 bg-white/95 backdrop-blur shadow-lg">
           <Input
             placeholder="Set Name (e.g., Spanish Vocab, History Quiz)"
             value={setName}
@@ -79,13 +84,13 @@ export function CreateSet({ onBack }: CreateSetProps) {
         </Card>
 
         {cards.length > 0 && (
-          <Card className="p-6 mb-6 bg-white shadow-lg">
+          <Card className="p-6 mb-6 bg-white/95 backdrop-blur shadow-lg">
             <h3 className="font-bold text-lg mb-4">Cards in this set ({cards.length})</h3>
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
               {cards.map((card, index) => (
-                <div key={index} className="p-3 bg-secondary rounded-lg">
-                  <p className="font-medium text-sm text-muted-foreground">Q: {card.question}</p>
-                  <p className="text-sm">A: {card.answer}</p>
+                <div key={index} className="p-3 bg-slate-100 rounded-lg border border-slate-200">
+                  <p className="font-medium text-sm text-slate-500">Q: {card.question}</p>
+                  <p className="text-sm font-semibold text-slate-800">A: {card.answer}</p>
                 </div>
               ))}
             </div>
@@ -95,7 +100,7 @@ export function CreateSet({ onBack }: CreateSetProps) {
         <Button
           onClick={handleSaveSet}
           disabled={!setName.trim() || cards.length === 0}
-          className="w-full h-14 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+          className="w-full h-14 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl"
         >
           <Save className="w-5 h-5 mr-2" />
           Save Set

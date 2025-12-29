@@ -1,201 +1,192 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Check, X, RotateCw, Trophy, Trash2 } from "lucide-react"
+import { ArrowLeft, Check, X, Trophy, Trash2 } from "lucide-react"
 import { useSets } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
-import { motion } from "framer-motion"
 
 type QuizModeProps = {
   onBack: () => void
 }
 
 export function QuizMode({ onBack }: QuizModeProps) {
-  // 1. Get 'removeSet' so we can delete stuff
-  const { sets, removeSet } = useSets() 
-  const { addCoins } = useCoins()
-  
-  // States
-  const [selectedSetId, setSelectedSetId] = useState<string | null>(null)
+  const { sets, removeSet } = useSets()
+  const { coins, addCoins } = useCoins()
+
+  const [selectedSet, setSelectedSet] = useState<string | null>(null)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
-  const [isFlipped, setIsFlipped] = useState(false)
-  const [sessionCoins, setSessionCoins] = useState(0)
-  const [isComplete, setIsComplete] = useState(false)
+  const [showAnswer, setShowAnswer] = useState(false)
+  const [score, setScore] = useState(0)
+  const [shuffledCards, setShuffledCards] = useState<{ question: string; answer: string }[]>([])
 
-  // Derived state
-  const currentSet = sets.find(s => s.id === selectedSetId)
-  const activeCard = currentSet?.cards[currentCardIndex]
+  const currentSet = sets.find((s) => s.id === selectedSet)
 
-  const handleSelectSet = (id: string) => {
-    setSelectedSetId(id)
-    setCurrentCardIndex(0)
-    setIsFlipped(false)
-    setSessionCoins(0)
-    setIsComplete(false)
+  // Shuffle cards when a set is selected
+  useEffect(() => {
+    if (currentSet) {
+      const shuffled = [...currentSet.cards].sort(() => Math.random() - 0.5)
+      setShuffledCards(shuffled)
+      setCurrentCardIndex(0)
+      setScore(0)
+      setShowAnswer(false)
+    }
+  }, [currentSet])
+
+  const handleCorrect = () => {
+    addCoins(1) // Immediate reward: 1 coin per right answer
+    setScore(score + 1)
+    nextCard()
   }
 
-  const handleDeleteSet = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation() // Stop the click from opening the set
-    if (confirm("Are you sure you want to delete this set?")) {
-      removeSet(id)
-    }
+  const handleWrong = () => {
+    nextCard()
   }
 
-  const handleNextCard = (correct: boolean) => {
-    if (correct) {
-      addCoins(10) // Reward for correct answer
-      setSessionCoins(prev => prev + 10)
-    }
-
-    setIsFlipped(false)
-
-    if (currentSet && currentCardIndex < currentSet.cards.length - 1) {
-      setTimeout(() => setCurrentCardIndex(prev => prev + 1), 200)
+  const nextCard = () => {
+    if (currentCardIndex < shuffledCards.length - 1) {
+      setCurrentCardIndex(currentCardIndex + 1)
+      setShowAnswer(false)
     } else {
-      setIsComplete(true)
+      // Loop back to start (or you could show a summary screen here)
+      const shuffled = [...shuffledCards].sort(() => Math.random() - 0.5)
+      setShuffledCards(shuffled)
+      setCurrentCardIndex(0)
+      setShowAnswer(false)
     }
   }
 
-  // --- SCREEN 1: SELECT A SET ---
-  if (!selectedSetId) {
+  // --- 1. SELECTION SCREEN ---
+  if (!selectedSet) {
     return (
-      <div className="max-w-3xl mx-auto p-6 z-10 relative">
-        <Button variant="ghost" onClick={onBack} className="mb-6">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
-        </Button>
-        
-        <h2 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Choose a Set to Study
-        </h2>
-        
-        <div className="grid gap-4">
-          {sets.length === 0 ? (
-            <div className="text-center p-8 bg-white/50 rounded-xl border-2 border-dashed border-gray-300">
-              <p className="text-gray-500 mb-4">No flashcards found!</p>
-              <Button onClick={onBack} variant="outline">Go Create One</Button>
-            </div>
-          ) : (
-            sets.map((set) => (
-              <div key={set.id} className="relative group">
-                <Card 
-                  className="p-6 cursor-pointer hover:border-purple-500 transition-all hover:shadow-md bg-white/90 backdrop-blur"
-                  onClick={() => handleSelectSet(set.id)}
-                >
-                  <div className="flex justify-between items-center pr-12">
-                    <div>
-                      <h3 className="text-xl font-bold">{set.title}</h3>
-                      <p className="text-gray-500">{set.cards.length} cards</p>
-                    </div>
-                    <Button variant="secondary" className="hidden sm:flex">Start Quiz</Button>
-                  </div>
-                </Card>
+      <div className="min-h-screen p-6 relative z-10">
+        <div className="max-w-3xl mx-auto">
+          
+          {/* SAFE HEADER BOX */}
+          <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-8 border border-white/50">
+            <Button variant="ghost" onClick={onBack} className="mb-2 pl-0 hover:bg-transparent">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Test Yourself
+            </h1>
+          </div>
 
-                {/* DELETE BUTTON */}
+          <div className="grid gap-4">
+            {sets.length === 0 ? (
+              <div className="text-center p-8 bg-white/80 rounded-xl border-2 border-dashed border-gray-300">
+                <p className="text-gray-500 mb-4">No flashcards found!</p>
+                <Button onClick={onBack} variant="outline">Go Create One</Button>
+              </div>
+            ) : (
+              sets.map((set) => (
+                <div key={set.id} className="relative group">
+                  <Card
+                    className="p-6 bg-white/95 backdrop-blur shadow-md hover:shadow-xl transition-all cursor-pointer border-l-4 border-l-purple-500"
+                    onClick={() => setSelectedSet(set.id)}
+                  >
+                    <div className="pr-12">
+                      <h3 className="text-xl font-bold mb-1 text-slate-800">{set.name}</h3>
+                      <p className="text-sm text-slate-500">{set.cards.length} cards</p>
+                    </div>
+                  </Card>
+
+                  {/* Delete Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-red-600 hover:bg-red-50 z-20"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm("Are you sure you want to delete this set?")) {
+                        removeSet(set.id)
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- 2. GAME SCREEN ---
+  if (shuffledCards.length === 0) return null
+
+  const currentCard = shuffledCards[currentCardIndex]
+
+  return (
+    <div className="min-h-screen p-6 relative z-10">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* SAFE HEADER BOX */}
+        <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-6 border border-white/50">
+          <Button variant="ghost" onClick={() => setSelectedSet(null)} className="mb-2 pl-0 hover:bg-transparent">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Sets
+          </Button>
+
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-sm text-slate-500 font-medium">
+                Question {currentCardIndex + 1} of {shuffledCards.length}
+              </p>
+              <p className="text-2xl font-bold text-slate-800">Score: {score}</p>
+            </div>
+            
+            <div className="bg-yellow-100 px-3 py-1 rounded-full border border-yellow-300 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-yellow-600" />
+              <span className="font-bold text-yellow-900 text-sm">{coins} coins</span>
+            </div>
+          </div>
+        </div>
+
+        {/* THE CARD (Simple, No Flip) */}
+        <Card className="p-8 bg-white/95 backdrop-blur shadow-xl mb-6 min-h-[300px] flex flex-col justify-center border-t-4 border-t-blue-500">
+          <p className="text-sm text-slate-400 uppercase tracking-widest mb-4 font-bold">Question</p>
+          <p className="text-3xl font-bold mb-8 text-slate-900 text-balance">{currentCard.question}</p>
+
+          {!showAnswer ? (
+            <Button
+              onClick={() => setShowAnswer(true)}
+              className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 shadow-md transition-transform active:scale-95"
+            >
+              Show Answer
+            </Button>
+          ) : (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+                <p className="text-sm text-green-700 uppercase tracking-widest mb-1 font-bold">Answer</p>
+                <p className="text-2xl font-bold text-green-900">{currentCard.answer}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-400 hover:text-red-600 hover:bg-red-50 z-20"
-                  onClick={(e) => handleDeleteSet(e, set.id)}
+                  onClick={handleWrong}
+                  variant="outline"
+                  className="h-14 text-lg border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <X className="w-5 h-5 mr-2" />
+                  Missed It
+                </Button>
+                <Button
+                  onClick={handleCorrect}
+                  className="h-14 text-lg bg-green-600 hover:bg-green-700 shadow-md"
+                >
+                  <Check className="w-5 h-5 mr-2" />
+                  Got It! (+1)
                 </Button>
               </div>
-            ))
+            </div>
           )}
-        </div>
-      </div>
-    )
-  }
-
-  // --- SCREEN 2: QUIZ COMPLETE ---
-  if (isComplete) {
-    return (
-      <div className="max-w-md mx-auto p-6 text-center pt-20 z-10 relative">
-        <Card className="p-8 bg-white/90 backdrop-blur border-2 border-yellow-400 shadow-xl animate-in zoom-in">
-          <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-6 animate-bounce" />
-          <h2 className="text-3xl font-bold mb-2">Quiz Complete!</h2>
-          <p className="text-gray-600 mb-6">You earned</p>
-          
-          <div className="text-5xl font-bold text-yellow-600 mb-8">
-            +{sessionCoins} Coins
-          </div>
-          
-          <div className="flex flex-col gap-3">
-            <Button onClick={() => setSelectedSetId(null)} size="lg" className="w-full">
-              Study Another Set
-            </Button>
-            <Button onClick={onBack} variant="outline" className="w-full">
-              Back to Menu
-            </Button>
-          </div>
         </Card>
       </div>
-    )
-  }
-
-  // --- SCREEN 3: ACTIVE FLASHCARD (The Game) ---
-  return (
-    <div className="max-w-xl mx-auto p-6 flex flex-col items-center pt-10 z-10 relative">
-      <div className="w-full flex justify-between items-center mb-8">
-        <Button variant="ghost" onClick={() => setSelectedSetId(null)}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Exit
-        </Button>
-        <span className="font-bold text-lg text-slate-700 bg-white/50 px-3 py-1 rounded-full">
-          Card {currentCardIndex + 1} / {currentSet?.cards.length}
-        </span>
-      </div>
-
-      {/* FLASHCARD AREA */}
-      <div className="w-full h-80 relative perspective-1000 mb-8 cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
-        <motion.div
-          initial={false}
-          animate={{ rotateY: isFlipped ? 180 : 0 }}
-          transition={{ duration: 0.6, type: "spring" }}
-          className="w-full h-full relative preserve-3d"
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          {/* FRONT (Question) */}
-          <Card className="absolute inset-0 flex items-center justify-center p-8 text-center text-2xl font-bold backface-hidden border-2 border-white/50 bg-white/80 backdrop-blur shadow-xl">
-            {activeCard?.term}
-            <div className="absolute bottom-4 text-xs text-gray-400 uppercase tracking-widest flex items-center gap-1">
-              <RotateCw className="w-3 h-3" /> Click to Flip
-            </div>
-          </Card>
-
-          {/* BACK (Answer) */}
-          <Card 
-            className="absolute inset-0 flex items-center justify-center p-8 text-center text-xl bg-blue-50 border-2 border-blue-400 shadow-xl"
-            style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-          >
-            {activeCard?.definition}
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* CONTROLS */}
-      {isFlipped ? (
-        <div className="flex gap-4 w-full animate-in fade-in slide-in-from-bottom-4">
-          <Button 
-            className="flex-1 bg-red-100 text-red-700 hover:bg-red-200 border-red-300 h-14 text-lg hover:scale-105 transition-transform" 
-            variant="outline"
-            onClick={() => handleNextCard(false)}
-          >
-            <X className="w-6 h-6 mr-2" /> Incorrect
-          </Button>
-          <Button 
-            className="flex-1 bg-green-100 text-green-700 hover:bg-green-200 border-green-300 h-14 text-lg hover:scale-105 transition-transform" 
-            variant="outline"
-            onClick={() => handleNextCard(true)}
-          >
-            <Check className="w-6 h-6 mr-2" /> Correct
-          </Button>
-        </div>
-      ) : (
-        <p className="text-slate-500 animate-pulse font-medium">Tap the card to see the answer</p>
-      )}
-
     </div>
   )
 }
