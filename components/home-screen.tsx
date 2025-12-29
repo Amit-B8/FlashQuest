@@ -6,20 +6,15 @@ import { BookOpen, Trophy, ShoppingBag, Sparkles } from "lucide-react"
 import { useCoins } from "@/hooks/use-coins"
 import { useSets } from "@/hooks/use-sets"
 import { useAvatar } from "@/hooks/use-avatar"
-import { useBackground } from "@/hooks/use-background" // Import background hook
+import { useBackground } from "@/hooks/use-background"
 import type { Screen } from "@/app/page"
+
+// 1. IMPORT DATA FROM YOUR NEW CENTRAL FILE
+import { AVATARS, BACKGROUNDS } from "@/lib/data"
 
 type HomeScreenProps = {
   onNavigate: (screen: Screen) => void
 }
-
-// Ensure this matches the Shop's background list manually or import a constant
-const BACKGROUNDS = [
-  { id: "blue-sky", class: "bg-gradient-to-b from-blue-300 to-blue-100" },
-  { id: "sunset", class: "bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600" },
-  { id: "forest", class: "bg-gradient-to-br from-green-600 to-emerald-900" },
-  { id: "dark-mode", class: "bg-slate-900" },
-]
 
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { coins } = useCoins()
@@ -27,33 +22,34 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { currentAvatar } = useAvatar()
   const { activeBackground } = useBackground()
 
-  const getAvatarEmoji = (id: string) => {
-    switch (id) {
-      case 'robot': return '🤖'
-      case 'ninja': return '🥷'
-      case 'alien': return '👽'
-      case 'king':  return '👑'
-      default:      return '🙂'
-    }
-  }
+  // 2. NEW LOGIC: Find the full avatar data from the central list
+  // This handles images, emojis, and new items (like the wizard) automatically
+  const currentAvatarData = AVATARS.find(a => a.id === currentAvatar) || AVATARS[0]
 
-  // Helper to render background
+  // Helper to render background using the central list
   const renderBackground = () => {
     const bgItem = BACKGROUNDS.find(b => b.id === activeBackground)
     const bgClass = bgItem ? bgItem.class : "bg-gradient-to-br from-blue-50 to-purple-50"
-    return <div className={`fixed inset-0 ${bgClass} -z-50`} />
+    return <div className={`fixed inset-0 ${bgClass} -z-50 transition-colors duration-500`} />
   }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
       {renderBackground()}
       
-      {/* --- TOP RIGHT AVATAR (Pure Display) --- */}
+      {/* --- TOP RIGHT AVATAR (Now fully synced) --- */}
       <div className="absolute top-4 right-4 flex items-center gap-3">
-        {/* Removed 'Player' text as requested */}
-        {/* Removed 'onClick' so it does not navigate */}
-        <div className="w-14 h-14 bg-white/80 backdrop-blur rounded-full border-2 border-white/50 flex items-center justify-center text-3xl shadow-md">
-           {getAvatarEmoji(currentAvatar)}
+        <div className="w-14 h-14 bg-white/80 backdrop-blur rounded-full border-2 border-white/50 flex items-center justify-center shadow-md overflow-hidden">
+           {/* Check for image first, then fall back to icon (emoji) */}
+           {currentAvatarData.image ? (
+              <img 
+                src={currentAvatarData.image} 
+                alt="Avatar" 
+                className="w-full h-full object-cover" 
+              />
+           ) : (
+              <span className="text-3xl">{currentAvatarData.icon}</span>
+           )}
         </div>
       </div>
 
@@ -65,7 +61,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           </h1>
           <Sparkles className="w-12 h-12 text-yellow-500 animate-pulse" />
         </div>
-        <p className="text-lg text-slate-700 font-medium max-w-md mx-auto bg-white/30 backdrop-blur-sm p-2 rounded-lg">
+        <p className="text-lg text-slate-700 font-medium max-w-md mx-auto bg-white/30 backdrop-blur-sm p-2 rounded-lg text-center">
           Create flashcards, test your knowledge, earn coins, and unlock epic minigames
         </p>
       </div>
