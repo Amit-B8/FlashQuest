@@ -23,7 +23,9 @@ const GAMES = [
 
 export function Shop({ onBack, onPlayGame }: ShopProps) {
   const { coins, removeCoins } = useCoins()
-  const { unlockedGames, unlockGame } = useShop()
+  
+  // 1. UPDATED: Added 'lockGame' to the imports here
+  const { unlockedGames, unlockGame, lockGame } = useShop()
 
   const handlePurchase = (gameId: string, cost: number) => {
     if (coins >= cost && !unlockedGames.includes(gameId)) {
@@ -70,11 +72,16 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
                             <Unlock className="w-5 h-5" />
                             <span className="font-bold">Unlocked</span>
                           </div>
+                          
+                          {/* 2. UPDATED: The Play Button now locks the game immediately */}
                           <Button
-                            onClick={() => onPlayGame(game.id)}
+                            onClick={() => {
+                              lockGame(game.id) // <--- Consumes the ticket
+                              onPlayGame(game.id) // <--- Starts the game
+                            }}
                             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                           >
-                            Play Now
+                            Play (1 Use)
                           </Button>
                         </>
                       ) : (
@@ -88,7 +95,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
                             disabled={!canAfford}
                             className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
                           >
-                            {canAfford ? "Buy Now" : "Not Enough Coins"}
+                            {canAfford ? "Buy Ticket" : "Not Enough Coins"}
                           </Button>
                         </>
                       )}
