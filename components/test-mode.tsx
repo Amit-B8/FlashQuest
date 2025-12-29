@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Check, X, Trophy } from "lucide-react"
+// 1. ADDED: Trash2 icon
+import { ArrowLeft, Check, X, Trophy, Trash2 } from "lucide-react"
 import { useSets } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
 
@@ -12,7 +13,9 @@ type TestModeProps = {
 }
 
 export function TestMode({ onBack }: TestModeProps) {
-  const { sets } = useSets()
+  // 2. UPDATED: Grab 'removeSet' from the hook
+  const { sets, removeSet } = useSets()
+  
   const { coins, addCoins } = useCoins()
   const [selectedSet, setSelectedSet] = useState<string | null>(null)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
@@ -44,7 +47,6 @@ export function TestMode({ onBack }: TestModeProps) {
       setCurrentCardIndex(currentCardIndex + 1)
       setShowAnswer(false)
     } else {
-      // Test complete
       setCurrentCardIndex(0)
       setShowAnswer(false)
       const shuffled = [...shuffledCards].sort(() => Math.random() - 0.5)
@@ -52,6 +54,7 @@ export function TestMode({ onBack }: TestModeProps) {
     }
   }
 
+  // --- SELECTION SCREEN ---
   if (!selectedSet) {
     return (
       <div className="min-h-screen p-6">
@@ -67,14 +70,32 @@ export function TestMode({ onBack }: TestModeProps) {
 
           <div className="grid gap-4">
             {sets.map((set) => (
-              <Card
-                key={set.id}
-                className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-                onClick={() => setSelectedSet(set.id)}
-              >
-                <h3 className="text-xl font-bold mb-2">{set.name}</h3>
-                <p className="text-sm text-muted-foreground">{set.cards.length} cards</p>
-              </Card>
+              // 3. UPDATED: Wrapped in a relative div to position the delete button
+              <div key={set.id} className="relative group">
+                <Card
+                  className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                  onClick={() => setSelectedSet(set.id)}
+                >
+                  {/* Added padding-right (pr-12) so text doesn't hit the trash button */}
+                  <h3 className="text-xl font-bold mb-2 pr-12">{set.name}</h3>
+                  <p className="text-sm text-muted-foreground">{set.cards.length} cards</p>
+                </Card>
+
+                {/* 4. NEW: The Delete Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-4 right-4 text-red-400 hover:text-red-600 hover:bg-red-50 z-10"
+                  onClick={(e) => {
+                    e.stopPropagation() // Stops the click from starting the game
+                    if (confirm("Are you sure you want to delete this set?")) {
+                      removeSet(set.id)
+                    }
+                  }}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </Button>
+              </div>
             ))}
           </div>
         </div>
@@ -82,6 +103,7 @@ export function TestMode({ onBack }: TestModeProps) {
     )
   }
 
+  // --- GAME SCREEN (Unchanged logic below) ---
   if (shuffledCards.length === 0) return null
 
   const currentCard = shuffledCards[currentCardIndex]

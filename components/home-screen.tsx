@@ -74,7 +74,8 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           <ShoppingBag className="w-10 h-10" />
           <div className="text-center">
             <p className="font-bold text-lg">Shop</p>
-            <p className="text-sm text-pink-100">Buy minigames</p>
+            <p className="text-sm text-pink-100">Buy minigames, avatars,</p>
+            <p className="text-sm text-pink-100">backgrounds and more</p>
           </div>
         </Button>
       </div>

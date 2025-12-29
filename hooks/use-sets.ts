@@ -19,5 +19,14 @@ export function useSets() {
     localStorage.setItem("flashquest-sets", JSON.stringify(newSets))
   }
 
-  return { sets, addSet }
+  const removeSet = (id: string) => {
+    // This creates a new list keeping everything EXCEPT the one with the matching ID
+    const newSets = sets.filter((s) => s.id !== id)
+    
+    // Update the state and save to local storage
+    setSets(newSets)
+    localStorage.setItem("flashquest-sets", JSON.stringify(newSets))
+  }
+
+  return { sets, addSet, removeSet }
 }
