@@ -8,30 +8,18 @@ import { useShop } from "@/hooks/use-shop"
 import { useAvatar } from "@/hooks/use-avatar"
 import { useBackground } from "@/hooks/use-background"
 
+// 1. IMPORT DATA FROM YOUR NEW FILE
+import { AVATARS, BACKGROUNDS } from "@/lib/data"
+
 type ShopProps = {
   onBack: () => void
   onPlayGame: (game: string) => void
 }
 
-// --- DATA ---
+// We still keep GAMES here for now unless you move them to data.ts later
 const GAMES = [
   { id: "memory-game", name: "Memory Match", description: "Classic card game", cost: 10, icon: "🎴" },
 ]
-
-const AVATARS = [
-  { id: "robot", name: "Cool Robot", cost: 50, icon: "🤖" },
-  { id: "ninja", name: "Ninja", cost: 100, icon: "🥷" },
-  { id: "alien", name: "Alien", cost: 150, icon: "👽" },
-  { id: "king", name: "King", cost: 500, icon: "👑" },
-]
-
-const BACKGROUNDS = [
-  { id: "blue-sky", name: "Blue Sky", cost: 50, class: "bg-gradient-to-b from-blue-300 to-blue-100" },
-  { id: "sunset", name: "Sunset", cost: 100, class: "bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600" },
-  { id: "forest", name: "Forest", cost: 75, class: "bg-gradient-to-br from-green-600 to-emerald-900" },
-  { id: "dark-mode", name: "Dark Mode", cost: 150, class: "bg-slate-900" },
-]
-// ------------
 
 export function Shop({ onBack, onPlayGame }: ShopProps) {
   const { coins, removeCoins } = useCoins()
@@ -39,14 +27,14 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
   const { ownedAvatars, currentAvatar, buyAvatar, equipAvatar } = useAvatar()
   const { ownedBackgrounds, activeBackground, buyBackground, equipBackground } = useBackground()
 
-  // --- BACKGROUND RENDERER ---
+  // Helper to render the active background
   const renderBackground = () => {
+    // Find the background in your new list
     const bgItem = BACKGROUNDS.find(b => b.id === activeBackground)
     const bgClass = bgItem ? bgItem.class : "bg-gradient-to-br from-blue-50 to-purple-50"
     return <div className={`fixed inset-0 ${bgClass} -z-50 transition-colors duration-500`} />
   }
 
-  // --- HANDLERS ---
   const handlePurchaseGame = (id: string, cost: number) => {
     if (coins >= cost && !unlockedGames.includes(id)) {
       removeCoins(cost); unlockGame(id);
@@ -69,7 +57,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
     <div className="min-h-screen relative pb-20">
       {renderBackground()}
 
-      {/* --- FIXED HEADER (Pinned to top) --- */}
+      {/* FIXED HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm p-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Button variant="ghost" onClick={onBack} size="sm">
@@ -83,13 +71,13 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
         </div>
       </div>
 
-      {/* --- MAIN CONTENT (Added pt-28 so it doesn't hide behind the header) --- */}
+      {/* MAIN CONTENT */}
       <div className="max-w-3xl mx-auto px-6 pt-28">
         <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
           Item Shop
         </h1>
 
-        {/* --- SECTION 1: MINIGAMES --- */}
+        {/* SECTION 1: MINIGAMES */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-4 border-b border-black/10 pb-2">
             <Gamepad2 className="w-6 h-6 text-purple-600" />
@@ -124,7 +112,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
           </div>
         </div>
 
-        {/* --- SECTION 2: AVATARS --- */}
+        {/* SECTION 2: AVATARS */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-4 border-b border-black/10 pb-2">
             <User className="w-6 h-6 text-blue-600" />
@@ -136,14 +124,28 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
               const isActive = currentAvatar === avatar.id
               return (
                 <Card key={avatar.id} className={`p-4 flex flex-col items-center text-center bg-white/90 ${isActive ? 'border-4 border-blue-500' : ''}`}>
-                  <div className="text-6xl mb-4">{avatar.icon}</div>
+                  
+                  {/* 2. UPDATED DISPLAY LOGIC: Checks for image OR icon */}
+                  <div className="h-16 w-16 mb-4 relative flex items-center justify-center">
+                    {avatar.image ? (
+                      <img 
+                        src={avatar.image} 
+                        alt={avatar.name} 
+                        className="w-full h-full object-contain" 
+                      />
+                    ) : (
+                      <div className="text-6xl">{avatar.icon}</div>
+                    )}
+                  </div>
+
                   <h3 className="font-bold mb-1">{avatar.name}</h3>
-                  <p className="text-sm text-gray-500 mb-4">Cost: {avatar.cost}</p>
+                  <p className="text-sm text-gray-500 mb-4">{avatar.cost === 0 ? "Free" : `Cost: ${avatar.cost}`}</p>
                   
                   {isOwned ? (
                     <Button 
                       variant={isActive ? "secondary" : "default"} 
                       onClick={() => equipAvatar(avatar.id)}
+                      disabled={isActive}
                       className="w-full"
                     >
                       {isActive ? <><Check className="w-4 h-4 mr-2"/> Equipped</> : "Equip"}
@@ -160,25 +162,10 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
                 </Card>
               )
             })}
-            {/* Default Avatar Card */}
-            <Card className={`p-4 flex flex-col items-center text-center bg-white/90 ${currentAvatar === 'default' ? 'border-4 border-blue-500' : ''}`}>
-              <div className="text-6xl mb-4">🙂</div>
-              <h3 className="font-bold mb-1">Default</h3>
-              <p className="text-sm text-gray-500 mb-4">Free</p>
-              
-              <Button 
-                variant={currentAvatar === 'default' ? "secondary" : "default"} 
-                onClick={() => equipAvatar("default")}
-                disabled={currentAvatar === 'default'}
-                className="w-full"
-              >
-                {currentAvatar === 'default' ? <><Check className="w-4 h-4 mr-2"/> Equipped</> : "Equip"}
-              </Button>
-            </Card>
           </div>
         </div>
 
-        {/* --- SECTION 3: BACKGROUNDS --- */}
+        {/* SECTION 3: BACKGROUNDS */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-4 border-b border-black/10 pb-2">
             <Palette className="w-6 h-6 text-orange-600" />
@@ -195,12 +182,13 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
                   
                   <div className="p-4 text-center">
                     <h3 className="font-bold mb-1">{bg.name}</h3>
-                    <p className="text-sm text-gray-500 mb-3">Cost: {bg.cost}</p>
+                    <p className="text-sm text-gray-500 mb-3">{bg.cost === 0 ? "Free" : `Cost: ${bg.cost}`}</p>
                     
                     {isOwned ? (
                       <Button 
                         variant={isActive ? "secondary" : "default"} 
                         onClick={() => equipBackground(bg.id)}
+                        disabled={isActive}
                         className="w-full"
                       >
                         {isActive ? "Active" : "Activate"}
@@ -218,21 +206,6 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
                 </Card>
               )
             })}
-             {/* Default Background Card */}
-             <Card className={`overflow-hidden bg-white/90 ${activeBackground === 'default' ? 'ring-4 ring-orange-500' : ''}`}>
-                  <div className="h-24 w-full bg-gradient-to-br from-blue-50 to-purple-50" />
-                  <div className="p-4 text-center">
-                    <h3 className="font-bold mb-1">Default</h3>
-                    <p className="text-sm text-gray-500 mb-3">Free</p>
-                    <Button 
-                      variant={activeBackground === 'default' ? "secondary" : "default"} 
-                      onClick={() => equipBackground("default")}
-                      className="w-full"
-                    >
-                      {activeBackground === 'default' ? "Active" : "Activate"}
-                    </Button>
-                  </div>
-              </Card>
           </div>
         </div>
 
