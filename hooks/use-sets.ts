@@ -41,7 +41,7 @@ export function useSets() {
     saveSets(newSets)
   }
 
-  // --- NEW: RENAME FUNCTION ---
+  // --- RENAME FUNCTION ---
   const renameSet = (id: string, newName: string) => {
     const newSets = sets.map((s) => 
       // If IDs match, update the name. Otherwise, keep it the same.
@@ -49,6 +49,14 @@ export function useSets() {
     )
     saveSets(newSets)
   }
+  // ADD CARD TO EXISTING SET
+  const addCardToSet = (setId: string, card: Flashcard) => {
+    const newSets = sets.map((s) => 
+      // If ID matches, keep the set but add the new card to its list
+      s.id === setId ? { ...s, cards: [...s.cards, card] } : s
+    )
+    saveSets(newSets)
+  }
 
-  return { sets, addSet, removeSet, renameSet }
+  return { sets, addSet, removeSet, renameSet, addCardToSet }
 }

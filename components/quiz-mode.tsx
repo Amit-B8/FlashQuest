@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-// 1. ADD: Pencil icon
-import { ArrowLeft, Check, X, Trophy, Trash2, Pencil } from "lucide-react"
+// 1. ADD: Plus icon
+import { ArrowLeft, Check, X, Trophy, Trash2, Pencil, Plus } from "lucide-react"
 import { useSets } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
 
@@ -13,8 +13,8 @@ type QuizModeProps = {
 }
 
 export function QuizMode({ onBack }: QuizModeProps) {
-  // 2. GET: renameSet from the hook
-  const { sets, removeSet, renameSet } = useSets()
+  // 2. GET: addCardToSet from the hook
+  const { sets, removeSet, renameSet, addCardToSet } = useSets()
   const { coins, addCoins } = useCoins()
 
   const [selectedSet, setSelectedSet] = useState<string | null>(null)
@@ -35,28 +35,42 @@ export function QuizMode({ onBack }: QuizModeProps) {
     }
   }, [currentSet])
 
-  // --- NEW: EDIT HANDLER ---
+  // --- RENAME HANDLER ---
   const handleEditSet = (e: React.MouseEvent, id: string, currentName: string) => {
-    e.stopPropagation() // Stop click from starting the quiz
-    
-    // Simple prompt to get new name
+    e.stopPropagation()
     const newName = prompt("Enter a new name for this set:", currentName)
-    
     if (newName && newName.trim().length > 0) {
       const formattedName = newName.trim()
-      
-      // Check for duplicates (excluding itself)
       const nameExists = sets.some(
         s => s.name.toLowerCase() === formattedName.toLowerCase() && s.id !== id
       )
-      
       if (nameExists) {
         alert("A set with this name already exists!")
         return
       }
-
       renameSet(id, formattedName)
     }
+  }
+
+  // --- NEW: ADD QUESTION HANDLER ---
+  const handleAddCard = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation() // Stop click from starting the quiz
+
+    // Ask for Question
+    const question = prompt("Enter the new question:")
+    if (!question || question.trim().length === 0) return
+
+    // Ask for Answer
+    const answer = prompt("Enter the answer:")
+    if (!answer || answer.trim().length === 0) return
+
+    // Save it
+    addCardToSet(id, {
+      question: question.trim(),
+      answer: answer.trim()
+    })
+    
+    alert("Card added successfully!")
   }
 
   const handleCorrect = () => {
@@ -110,20 +124,32 @@ export function QuizMode({ onBack }: QuizModeProps) {
                     className="p-6 bg-white/95 backdrop-blur shadow-md hover:shadow-xl transition-all cursor-pointer border-l-4 border-l-purple-500"
                     onClick={() => setSelectedSet(set.id)}
                   >
-                    <div className="pr-24"> {/* Extra padding for buttons */}
+                    <div className="pr-32"> {/* Increased padding for 3 buttons */}
                       <h3 className="text-xl font-bold mb-1 text-slate-800">{set.name}</h3>
                       <p className="text-sm text-slate-500">{set.cards.length} cards</p>
                     </div>
                   </Card>
 
                   {/* ACTION BUTTONS */}
-                  <div className="absolute top-4 right-4 flex gap-2 z-20">
+                  <div className="absolute top-4 right-4 flex gap-1 z-20">
                     
-                    {/* 3. NEW: Edit Button */}
+                    {/* 3. NEW: Add Question Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-400 hover:text-green-600 hover:bg-green-50"
+                      title="Add Question"
+                      onClick={(e) => handleAddCard(e, set.id)}
+                    >
+                      <Plus className="w-5 h-5" />
+                    </Button>
+
+                    {/* Edit Name Button */}
                     <Button
                       variant="ghost"
                       size="icon"
                       className="text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                      title="Rename Set"
                       onClick={(e) => handleEditSet(e, set.id, set.name)}
                     >
                       <Pencil className="w-5 h-5" />
@@ -134,6 +160,7 @@ export function QuizMode({ onBack }: QuizModeProps) {
                       variant="ghost"
                       size="icon"
                       className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      title="Delete Set"
                       onClick={(e) => {
                         e.stopPropagation()
                         if (confirm("Are you sure you want to delete this set?")) {
