@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card"
 import { BookOpen, Trophy, ShoppingBag, Sparkles } from "lucide-react"
 import { useCoins } from "@/hooks/use-coins"
 import { useSets } from "@/hooks/use-sets"
+// 1. Make sure this import is here
+import { useAvatar } from "@/hooks/use-avatar"
 import type { Screen } from "@/app/page"
 
 type HomeScreenProps = {
@@ -14,9 +16,35 @@ type HomeScreenProps = {
 export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { coins } = useCoins()
   const { sets } = useSets()
+  
+  // 2. Get the current avatar from the hook
+  const { currentAvatar } = useAvatar()
+
+  // 3. Helper function to get the emoji based on ID
+  const getAvatarEmoji = (id: string) => {
+    switch (id) {
+      case 'robot': return '🤖'
+      case 'ninja': return '🥷'
+      case 'alien': return '👽'
+      case 'king':  return '👑'
+      default:      return '🙂' // Default face
+    }
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
+      
+      {/* 4. NEW: Top Right Avatar Display */}
+      <div className="absolute top-4 right-4 flex items-center gap-3">
+        <span className="font-bold text-gray-700 hidden sm:inline">Player</span>
+        <div className="w-12 h-12 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center text-2xl shadow-sm cursor-pointer hover:scale-110 transition-transform" 
+             onClick={() => onNavigate("shop")} // Optional: Clicking face goes to shop
+             title="Go to Shop to change avatar"
+        >
+           {getAvatarEmoji(currentAvatar)}
+        </div>
+      </div>
+
       <div className="text-center mb-12 space-y-4">
         <div className="flex items-center justify-center gap-3 mb-6">
           <Sparkles className="w-12 h-12 text-yellow-500 animate-pulse" />
