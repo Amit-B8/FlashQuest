@@ -27,4 +27,5 @@ export default function Page() {
       {screen === "memory-game" && <MemoryGame onBack={() => setScreen("shop")} />}
     </main>
   )
+  
 }
