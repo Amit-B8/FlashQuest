@@ -35,7 +35,7 @@ export default function RootLayout({
         {children}
 
         {/* --- ADD FOOTER HERE --- */}
-        <footer className="py-8 text-center text-sm text-gray-500 border-t mt-12 bg-white/50 backdrop-blur-sm">
+        <footer className="py-6 text-center text-sm text-slate-600 border-t mt-12 bg-white shadow-inner">
           <p className="font-medium">Built with Next.js and Tailwind CSS. © 2025 Amit Boodhoo.</p>
         </footer>
         {/* ----------------------- */}

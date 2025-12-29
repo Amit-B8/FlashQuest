@@ -6,11 +6,8 @@ import { BookOpen, Trophy, ShoppingBag, Sparkles } from "lucide-react"
 import { useCoins } from "@/hooks/use-coins"
 import { useSets } from "@/hooks/use-sets"
 import { useAvatar } from "@/hooks/use-avatar"
-import { useBackground } from "@/hooks/use-background"
+import { AVATARS } from "@/lib/data" // Note: We removed BACKGROUNDS import
 import type { Screen } from "@/app/page"
-
-// 1. IMPORT DATA FROM YOUR NEW CENTRAL FILE
-import { AVATARS, BACKGROUNDS } from "@/lib/data"
 
 type HomeScreenProps = {
   onNavigate: (screen: Screen) => void
@@ -20,33 +17,19 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { coins } = useCoins()
   const { sets } = useSets()
   const { currentAvatar } = useAvatar()
-  const { activeBackground } = useBackground()
+  
+  // Note: We REMOVED useBackground() here because app/page.tsx handles it now!
 
-  // 2. NEW LOGIC: Find the full avatar data from the central list
-  // This handles images, emojis, and new items (like the wizard) automatically
   const currentAvatarData = AVATARS.find(a => a.id === currentAvatar) || AVATARS[0]
 
-  // Helper to render background using the central list
-  const renderBackground = () => {
-    const bgItem = BACKGROUNDS.find(b => b.id === activeBackground)
-    const bgClass = bgItem ? bgItem.class : "bg-gradient-to-br from-blue-50 to-purple-50"
-    return <div className={`fixed inset-0 ${bgClass} -z-50 transition-colors duration-500`} />
-  }
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
-      {renderBackground()}
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative z-10">
       
-      {/* --- TOP RIGHT AVATAR (Now fully synced) --- */}
+      {/* Top Right Avatar */}
       <div className="absolute top-4 right-4 flex items-center gap-3">
         <div className="w-14 h-14 bg-white/80 backdrop-blur rounded-full border-2 border-white/50 flex items-center justify-center shadow-md overflow-hidden">
-           {/* Check for image first, then fall back to icon (emoji) */}
            {currentAvatarData.image ? (
-              <img 
-                src={currentAvatarData.image} 
-                alt="Avatar" 
-                className="w-full h-full object-cover" 
-              />
+              <img src={currentAvatarData.image} alt="Avatar" className="w-full h-full object-cover" />
            ) : (
               <span className="text-3xl">{currentAvatarData.icon}</span>
            )}
@@ -61,11 +44,14 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
           </h1>
           <Sparkles className="w-12 h-12 text-yellow-500 animate-pulse" />
         </div>
-        <p className="text-lg text-slate-700 font-medium max-w-md mx-auto bg-white/30 backdrop-blur-sm p-2 rounded-lg text-center">
+        
+        {/* FIX: Removed 'bg-white/30 backdrop-blur-sm p-2' to remove the weird box */}
+        <p className="text-lg text-slate-700 font-medium max-w-md mx-auto">
           Create flashcards, test your knowledge, earn coins, and unlock epic minigames
         </p>
       </div>
 
+      {/* Coins Card */}
       <Card className="p-6 mb-8 bg-gradient-to-r from-yellow-100 to-amber-100 border-yellow-300 shadow-lg">
         <div className="flex items-center gap-3">
           <Trophy className="w-8 h-8 text-yellow-600" />
@@ -76,6 +62,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         </div>
       </Card>
 
+      {/* Buttons Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
         <Button
           size="lg"

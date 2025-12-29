@@ -27,13 +27,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
   const { ownedAvatars, currentAvatar, buyAvatar, equipAvatar } = useAvatar()
   const { ownedBackgrounds, activeBackground, buyBackground, equipBackground } = useBackground()
 
-  // Helper to render the active background
-  const renderBackground = () => {
-    // Find the background in your new list
-    const bgItem = BACKGROUNDS.find(b => b.id === activeBackground)
-    const bgClass = bgItem ? bgItem.class : "bg-gradient-to-br from-blue-50 to-purple-50"
-    return <div className={`fixed inset-0 ${bgClass} -z-50 transition-colors duration-500`} />
-  }
+  // --- DELETED: renderBackground function (Main Page handles this now) ---
 
   const handlePurchaseGame = (id: string, cost: number) => {
     if (coins >= cost && !unlockedGames.includes(id)) {
@@ -55,7 +49,8 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
 
   return (
     <div className="min-h-screen relative pb-20">
-      {renderBackground()}
+      
+      {/* --- DELETED: {renderBackground()} --- */}
 
       {/* FIXED HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm p-4">
@@ -125,7 +120,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
               return (
                 <Card key={avatar.id} className={`p-4 flex flex-col items-center text-center bg-white/90 ${isActive ? 'border-4 border-blue-500' : ''}`}>
                   
-                  {/* 2. UPDATED DISPLAY LOGIC: Checks for image OR icon */}
+                  {/* DISPLAY LOGIC */}
                   <div className="h-16 w-16 mb-4 relative flex items-center justify-center">
                     {avatar.image ? (
                       <img 
