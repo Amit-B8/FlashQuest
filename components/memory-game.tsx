@@ -97,8 +97,13 @@ export function MemoryGame({ onBack }: MemoryGameProps) {
           <Card className="p-6 mb-6 bg-gradient-to-r from-green-100 to-emerald-100 border-green-300">
             <h2 className="text-2xl font-bold text-green-900 mb-2">You Won!</h2>
             <p className="text-green-800 mb-4">Completed in {moves} moves. +5 coins!</p>
-            <Button onClick={initializeGame} className="bg-green-600 hover:bg-green-700">
-              Play Again
+            
+            {/* --- OLD CODE: Play Again button (Deleted) --- */}
+            {/* <Button onClick={initializeGame} ... > Play Again </Button> */}
+
+            {/* --- NEW CODE: Only allow them to leave --- */}
+            <Button onClick={onBack} className="bg-green-600 hover:bg-green-700">
+              Return to Shop
             </Button>
           </Card>
         )}
