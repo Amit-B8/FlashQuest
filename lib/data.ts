@@ -22,7 +22,9 @@ export const AVATARS: AvatarItem[] = [
   { id: "robot", name: "Cool Robot", cost: 50, icon: "🤖", image: null },
   { id: "ninja", name: "Ninja", cost: 100, icon: "🥷", image: null },
   { id: "alien", name: "Alien", cost: 150, icon: "👽", image: null },
+  { id: "wizard", name: "Wizard", cost: 200, icon: "🧙‍♂️", image: null },
   { id: "king", name: "King", cost: 500, icon: "👑", image: null },
+  
   
   // Now if you uncomment this, it fits the rules perfectly:
   // { id: "wizard", name: "Wizard", cost: 200, icon: null, image: "/avatars/wizard.png" },
