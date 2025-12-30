@@ -33,13 +33,6 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         {/* The Main App Content */}
         {children}
-
-        {/* --- ADD FOOTER HERE --- */}
-        <footer className="py-6 text-center text-sm text-slate-600 border-t mt-12 bg-white shadow-inner">
-          <p className="font-medium">Built with Next.js and Tailwind CSS. © 2025 Amit Boodhoo.</p>
-        </footer>
-        {/* ----------------------- */}
-
         {/* 2. ADD THIS LINE HERE so the button actually shows up */}
         <DevTools />
 

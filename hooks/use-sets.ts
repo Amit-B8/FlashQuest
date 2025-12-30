@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 
-// 1. DEFINE THE TYPES HERE (Removes the red line)
 export type Flashcard = {
   question: string
   answer: string
@@ -17,7 +16,6 @@ export type FlashcardSet = {
 export function useSets() {
   const [sets, setSets] = useState<FlashcardSet[]>([])
 
-  // Load data when the component starts
   useEffect(() => {
     const stored = localStorage.getItem("flashquest-sets")
     if (stored) {
@@ -25,7 +23,6 @@ export function useSets() {
     }
   }, [])
 
-  // Helper to save to state AND local storage at the same time
   const saveSets = (newSets: FlashcardSet[]) => {
     setSets(newSets)
     localStorage.setItem("flashquest-sets", JSON.stringify(newSets))
@@ -41,22 +38,44 @@ export function useSets() {
     saveSets(newSets)
   }
 
-  // --- RENAME FUNCTION ---
   const renameSet = (id: string, newName: string) => {
     const newSets = sets.map((s) => 
-      // If IDs match, update the name. Otherwise, keep it the same.
       s.id === id ? { ...s, name: newName } : s
     )
     saveSets(newSets)
   }
-  // ADD CARD TO EXISTING SET
+
   const addCardToSet = (setId: string, card: Flashcard) => {
     const newSets = sets.map((s) => 
-      // If ID matches, keep the set but add the new card to its list
       s.id === setId ? { ...s, cards: [...s.cards, card] } : s
     )
     saveSets(newSets)
   }
 
-  return { sets, addSet, removeSet, renameSet, addCardToSet }
+  // --- NEW: EDIT A SPECIFIC CARD ---
+  const updateCard = (setId: string, cardIndex: number, newCard: Flashcard) => {
+    const newSets = sets.map((s) => {
+      if (s.id === setId) {
+        const newCards = [...s.cards]
+        newCards[cardIndex] = newCard // Update the specific card
+        return { ...s, cards: newCards }
+      }
+      return s
+    })
+    saveSets(newSets)
+  }
+
+  // --- NEW: DELETE A SPECIFIC CARD ---
+  const deleteCard = (setId: string, cardIndex: number) => {
+    const newSets = sets.map((s) => {
+      if (s.id === setId) {
+        const newCards = s.cards.filter((_, i) => i !== cardIndex)
+        return { ...s, cards: newCards }
+      }
+      return s
+    })
+    saveSets(newSets)
+  }
+
+  return { sets, addSet, removeSet, renameSet, addCardToSet, updateCard, deleteCard }
 }

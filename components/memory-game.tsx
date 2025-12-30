@@ -81,7 +81,7 @@ export function MemoryGame({ onBack }: MemoryGameProps) {
           <h1 className="text-3xl font-bold">Memory Match</h1>
           <div className="flex gap-4 items-center">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Moves</p>
+              <p className="text-sm text-black font-bold">Moves</p>
               <p className="text-2xl font-bold">{moves}</p>
             </div>
             <Card className="px-4 py-2 bg-yellow-100 border-yellow-300">
