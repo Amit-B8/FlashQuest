@@ -13,13 +13,37 @@ export type FlashcardSet = {
   cards: Flashcard[]
 }
 
+// --- 1. DEFINE THE DEFAULT SET HERE ---
+const DEFAULT_SET: FlashcardSet = {
+  id: "demo-set",
+  name: "🚀 Start Here: Demo",
+  cards: [
+    { question: "What is Iron Man's real name?", answer: "Tony Stark" },
+    { question: "What is the name of the basketball team in Illinois?", answer: "Chicago Bulls" },
+    { question: "What is 12 x 12?", answer: "144" },
+    { question: "What is the chemical formula for water?", answer: "H2O" },
+    { question: "What is the capital of France?", answer: "Paris" }
+  ]
+}
+
 export function useSets() {
   const [sets, setSets] = useState<FlashcardSet[]>([])
 
+  // --- 2. UPDATE INITIALIZATION LOGIC ---
   useEffect(() => {
-    const stored = localStorage.getItem("flashquest-sets")
-    if (stored) {
-      setSets(JSON.parse(stored))
+    // Check if running in browser
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("flashquest-sets")
+      
+      if (stored) {
+        // If user has data, load it
+        setSets(JSON.parse(stored))
+      } else {
+        // If user is NEW, load the Default Set and save it
+        const initialSets = [DEFAULT_SET]
+        setSets(initialSets)
+        localStorage.setItem("flashquest-sets", JSON.stringify(initialSets))
+      }
     }
   }, [])
 
@@ -52,12 +76,11 @@ export function useSets() {
     saveSets(newSets)
   }
 
-  // --- NEW: EDIT A SPECIFIC CARD ---
   const updateCard = (setId: string, cardIndex: number, newCard: Flashcard) => {
     const newSets = sets.map((s) => {
       if (s.id === setId) {
         const newCards = [...s.cards]
-        newCards[cardIndex] = newCard // Update the specific card
+        newCards[cardIndex] = newCard
         return { ...s, cards: newCards }
       }
       return s
@@ -65,7 +88,6 @@ export function useSets() {
     saveSets(newSets)
   }
 
-  // --- NEW: DELETE A SPECIFIC CARD ---
   const deleteCard = (setId: string, cardIndex: number) => {
     const newSets = sets.map((s) => {
       if (s.id === setId) {
