@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { 
   ArrowLeft, Check, X, Trophy, Trash2, Pencil, Plus, 
-  ChevronDown, ChevronUp, RotateCw, Keyboard, AlertCircle, Upload, ImageIcon 
+  ChevronDown, ChevronUp, RotateCw, Keyboard, AlertCircle, Upload, 
+  Mic, MicOff // Added Mic icons
 } from "lucide-react"
 import { useSets, FlashcardSet, Flashcard } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
@@ -35,6 +36,11 @@ export function QuizMode({ onBack }: QuizModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
   
+  // VOICE STATE (New)
+  const [isListening, setIsListening] = useState(false)
+  const [spokenText, setSpokenText] = useState("")
+  const recognitionRef = useRef<any>(null)
+
   // Type Logic State
   const [inputAnswer, setInputAnswer] = useState("")
   const [feedback, setFeedback] = useState<"idle" | "correct" | "wrong" | "skipped">("idle")
@@ -122,6 +128,50 @@ export function QuizMode({ onBack }: QuizModeProps) {
     e.stopPropagation()
     setExpandedSetId(expandedSetId === id ? null : id)
   }
+  
+  // --- VOICE LOGIC (New) ---
+  useEffect(() => {
+    // Check if browser supports speech recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition()
+      recognition.continuous = false // Stop after one phrase
+      recognition.lang = "en-US"
+      recognition.interimResults = true
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript
+        setSpokenText(transcript)
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
+      }
+
+      recognitionRef.current = recognition
+    }
+  }, [])
+
+  const toggleListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (!SpeechRecognition) {
+      alert("Voice control is not supported in this browser. Please try Chrome or Safari.")
+      return
+    }
+
+    if (!recognitionRef.current) return
+
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    } else {
+      setSpokenText("") // Clear previous text
+      recognitionRef.current.start()
+      setIsListening(true)
+    }
+  }
 
   // --- GAME LOGIC ---
 
@@ -143,12 +193,16 @@ export function QuizMode({ onBack }: QuizModeProps) {
     setShowAnswer(false)
     setInputAnswer("")
     setFeedback("idle")
+    setSpokenText("") // Reset voice
+    setIsListening(false)
   }
 
   const nextCard = () => {
     setShowAnswer(false)
     setInputAnswer("")
     setFeedback("idle")
+    setSpokenText("") // Reset voice
+    setIsListening(false)
 
     if (currentIndex < shuffledCards.length - 1) {
       setCurrentIndex(prev => prev + 1)
@@ -227,7 +281,7 @@ export function QuizMode({ onBack }: QuizModeProps) {
 
                     {/* Preview */}
                     {formImage && (
-                       <div className="relative w-12 h-12 rounded border overflow-hidden group">
+                        <div className="relative w-12 h-12 rounded border overflow-hidden group">
                           <img src={formImage} alt="Preview" className="w-full h-full object-cover" />
                           <button 
                              onClick={() => setFormImage(undefined)}
@@ -235,7 +289,7 @@ export function QuizMode({ onBack }: QuizModeProps) {
                           >
                              <X className="w-4 h-4 text-white" />
                           </button>
-                       </div>
+                        </div>
                     )}
                   </div>
                 </div>
@@ -282,48 +336,48 @@ export function QuizMode({ onBack }: QuizModeProps) {
                   <div key={set.id} className="relative group">
                     <Card className={`p-6 bg-white/95 backdrop-blur shadow-md transition-all border-l-4 border-l-purple-500 ${isOpen ? 'ring-2 ring-purple-400' : ''}`}>
                       <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
-                         
-                         {/* LEFT: Info & Play */}
-                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-slate-800">{set.name}</h3>
-                            <p className="text-sm text-slate-500 mb-4">{set.cards.length} cards</p>
-                            
-                            <div className="flex gap-3">
-                                <Button 
-                                  onClick={() => startGame(set, "flip")}
-                                  disabled={set.cards.length === 0}
-                                  className="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
-                                >
-                                    <RotateCw className="w-4 h-4 mr-2" /> Flashcards
-                                </Button>
-                                <Button 
-                                  onClick={() => startGame(set, "type")}
-                                  disabled={set.cards.length === 0}
-                                  className="bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200"
-                                >
-                                    <Keyboard className="w-4 h-4 mr-2" /> Type Test
-                                </Button>
-                            </div>
-                         </div>
+                          
+                          {/* LEFT: Info & Play */}
+                          <div className="flex-1">
+                             <h3 className="text-xl font-bold text-slate-800">{set.name}</h3>
+                             <p className="text-sm text-slate-500 mb-4">{set.cards.length} cards</p>
+                             
+                             <div className="flex gap-3">
+                                 <Button 
+                                   onClick={() => startGame(set, "flip")}
+                                   disabled={set.cards.length === 0}
+                                   className="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
+                                 >
+                                     <RotateCw className="w-4 h-4 mr-2" /> Flashcards
+                                 </Button>
+                                 <Button 
+                                   onClick={() => startGame(set, "type")}
+                                   disabled={set.cards.length === 0}
+                                   className="bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200"
+                                 >
+                                     <Keyboard className="w-4 h-4 mr-2" /> Type Test
+                                 </Button>
+                             </div>
+                          </div>
 
-                         {/* RIGHT: Management */}
-                         <div className="flex gap-1 self-start">
-                            <Button variant="ghost" size="icon" onClick={(e) => openAddModal(e, set.id)} title="Add Card">
-                                <Plus className="w-5 h-5 text-gray-400 hover:text-green-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={(e) => handleEditSet(e, set.id, set.name)} title="Rename">
-                                <Pencil className="w-5 h-5 text-gray-400 hover:text-blue-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={(e) => {
-                                e.stopPropagation();
-                                if(confirm("Delete set?")) removeSet(set.id);
-                            }} title="Delete Set">
-                                <Trash2 className="w-5 h-5 text-gray-400 hover:text-red-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={(e) => toggleExpand(e, set.id)}>
-                                {isOpen ? <ChevronUp className="w-5 h-5 text-gray-600" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                            </Button>
-                         </div>
+                          {/* RIGHT: Management */}
+                          <div className="flex gap-1 self-start">
+                             <Button variant="ghost" size="icon" onClick={(e) => openAddModal(e, set.id)} title="Add Card">
+                                 <Plus className="w-5 h-5 text-gray-400 hover:text-green-600" />
+                             </Button>
+                             <Button variant="ghost" size="icon" onClick={(e) => handleEditSet(e, set.id, set.name)} title="Rename">
+                                 <Pencil className="w-5 h-5 text-gray-400 hover:text-blue-600" />
+                             </Button>
+                             <Button variant="ghost" size="icon" onClick={(e) => {
+                                 e.stopPropagation();
+                                 if(confirm("Delete set?")) removeSet(set.id);
+                             }} title="Delete Set">
+                                 <Trash2 className="w-5 h-5 text-gray-400 hover:text-red-600" />
+                             </Button>
+                             <Button variant="ghost" size="icon" onClick={(e) => toggleExpand(e, set.id)}>
+                                 {isOpen ? <ChevronUp className="w-5 h-5 text-gray-600" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                             </Button>
+                          </div>
                       </div>
                     </Card>
 
@@ -460,8 +514,31 @@ export function QuizMode({ onBack }: QuizModeProps) {
             {/* --- FLASHCARD MODE --- */}
             {gameMode === "flip" && (
                 <>
-                    <p className="text-sm text-slate-400 uppercase tracking-widest mb-4 font-bold">Question</p>
-                    <p className="text-3xl font-bold mb-8 text-slate-900 text-balance">{currentCard.question}</p>
+                    <div className="flex justify-between items-center mb-4">
+                        <p className="text-sm text-slate-400 uppercase tracking-widest font-bold">Question</p>
+                        
+                        {/* VOICE TOGGLE BUTTON (QUESTION SIDE) */}
+                        {!showAnswer && (
+                            <Button 
+                              size="sm" 
+                              variant={isListening ? "destructive" : "outline"} 
+                              onClick={toggleListening}
+                              className={`transition-all ${isListening ? "animate-pulse" : ""}`}
+                            >
+                               {isListening ? <Mic className="w-4 h-4 mr-1" /> : <MicOff className="w-4 h-4 mr-1" />}
+                               {isListening ? "Listening..." : "Say Answer"}
+                            </Button>
+                        )}
+                    </div>
+
+                    <p className="text-3xl font-bold mb-4 text-slate-900 text-balance">{currentCard.question}</p>
+
+                    {/* SHOW TRANSCRIPT IF SPOKEN */}
+                    {spokenText && !showAnswer && (
+                        <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded text-blue-800 text-sm animate-in fade-in">
+                            <span className="font-bold">You said:</span> "{spokenText}"
+                        </div>
+                    )}
 
                     {!showAnswer ? (
                         <Button onClick={() => setShowAnswer(true)} className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 shadow-md">
@@ -472,6 +549,14 @@ export function QuizMode({ onBack }: QuizModeProps) {
                             <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
                                 <p className="text-sm text-green-700 uppercase tracking-widest mb-1 font-bold">Answer</p>
                                 <p className="text-2xl font-bold text-green-900">{currentCard.answer}</p>
+                                
+                                {/* REPEAT TRANSCRIPT ON ANSWER SIDE FOR COMPARISON */}
+                                {spokenText && (
+                                    <div className="mt-4 pt-4 border-t border-green-200 text-sm text-green-800">
+                                        <span className="font-bold block text-xs uppercase opacity-70 mb-1">Your Speech</span>
+                                        "{spokenText}"
+                                    </div>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <Button onClick={handleFlipWrong} variant="outline" className="h-14 text-lg border-2 border-red-200 text-red-600 hover:bg-red-50">
