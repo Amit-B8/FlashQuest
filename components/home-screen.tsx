@@ -6,7 +6,7 @@ import { BookOpen, Trophy, ShoppingBag, Sparkles } from "lucide-react"
 import { useCoins } from "@/hooks/use-coins"
 import { useSets } from "@/hooks/use-sets"
 import { useAvatar } from "@/hooks/use-avatar"
-import { AVATARS } from "@/lib/data" // Note: We removed BACKGROUNDS import
+import { AVATARS } from "@/lib/data"
 import type { Screen } from "@/app/page"
 
 type HomeScreenProps = {
@@ -18,15 +18,17 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
   const { sets } = useSets()
   const { currentAvatar } = useAvatar()
   
-  // Note: We REMOVED useBackground() here because app/page.tsx handles it now!
-
   const currentAvatarData = AVATARS.find(a => a.id === currentAvatar) || AVATARS[0]
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative z-10">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative z-10 w-full overflow-hidden">
       
-      {/* Top Right Avatar */}
-      <div className="absolute top-4 right-4 flex items-center gap-3">
+      {/* AVATAR POSITIONING FIX:
+          - 'mb-6': On phone, adds space below avatar so it doesn't touch title.
+          - 'md:absolute md:top-4 md:right-4': On Computer, it ignores the flow and sticks to top-right.
+          - 'md:mb-0': On Computer, removes the bottom margin since it's floating.
+      */}
+      <div className="flex items-center gap-3 mb-6 md:absolute md:top-6 md:right-6 md:mb-0">
         <div className="w-14 h-14 bg-white/80 backdrop-blur rounded-full border-2 border-white/50 flex items-center justify-center shadow-md overflow-hidden">
            {currentAvatarData.image ? (
               <img src={currentAvatarData.image} alt="Avatar" className="w-full h-full object-cover" />
@@ -36,22 +38,22 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         </div>
       </div>
 
+      {/* HEADER TEXT */}
       <div className="text-center mb-12 space-y-4">
         <div className="flex items-center justify-center gap-3 mb-6">
-          <Sparkles className="w-12 h-12 text-yellow-500 animate-pulse" />
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-sm">
+          <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-yellow-500 animate-pulse" />
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-sm">
             FlashQuest
           </h1>
-          <Sparkles className="w-12 h-12 text-yellow-500 animate-pulse" />
+          <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-yellow-500 animate-pulse" />
         </div>
         
-        {/* FIX: Removed 'bg-white/30 backdrop-blur-sm p-2' to remove the weird box */}
         <p className="text-lg text-slate-700 font-medium max-w-md mx-auto">
           Create flashcards, test your knowledge, earn coins, and unlock epic minigames
         </p>
       </div>
 
-      {/* Coins Card */}
+      {/* COINS CARD - Reverted to your ORIGINAL styling (removed w-full) */}
       <Card className="p-6 mb-8 bg-gradient-to-r from-yellow-100 to-amber-100 border-yellow-300 shadow-lg">
         <div className="flex items-center gap-3">
           <Trophy className="w-8 h-8 text-yellow-600" />
@@ -62,7 +64,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
         </div>
       </Card>
 
-      {/* Buttons Grid */}
+      {/* BUTTONS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
         <Button
           size="lg"
