@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 export type Flashcard = {
   question: string
   answer: string
+  image?: string // <--- THIS IS THE ONLY CHANGE NEEDED
 }
 
 export type FlashcardSet = {

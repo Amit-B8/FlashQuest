@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { 
   ArrowLeft, Check, X, Trophy, Trash2, Pencil, Plus, 
-  ChevronDown, ChevronUp, RotateCw, Keyboard, AlertCircle 
+  ChevronDown, ChevronUp, RotateCw, Keyboard, AlertCircle, Upload, ImageIcon 
 } from "lucide-react"
 import { useSets, FlashcardSet, Flashcard } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
@@ -36,7 +36,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
   const [showAnswer, setShowAnswer] = useState(false)
   
   // Type Logic State
-  // Added "skipped" to feedback types so we can show a specific UI for it
   const [inputAnswer, setInputAnswer] = useState("")
   const [feedback, setFeedback] = useState<"idle" | "correct" | "wrong" | "skipped">("idle")
   
@@ -44,26 +43,75 @@ export function QuizMode({ onBack }: QuizModeProps) {
   const [score, setScore] = useState(0)
   const [isFinished, setIsFinished] = useState(false)
 
+  // --- MODAL & FORM STATE (For Images) ---
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null)
+  const [editingSetId, setEditingSetId] = useState<string | null>(null)
+  
+  const [formQuestion, setFormQuestion] = useState("")
+  const [formAnswer, setFormAnswer] = useState("")
+  const [formImage, setFormImage] = useState<string | undefined>(undefined)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // --- HANDLERS: IMAGE UPLOAD ---
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 500000) { 
+        alert("Image is too large! Please use an image under 500KB.")
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // --- HANDLERS: MODAL OPEN/CLOSE ---
+  const openAddModal = (e: React.MouseEvent, setId: string) => {
+    e.stopPropagation()
+    setEditingSetId(setId)
+    setEditingCardIndex(null) // Adding new
+    setFormQuestion("")
+    setFormAnswer("")
+    setFormImage(undefined)
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (e: React.MouseEvent, setId: string, index: number, card: Flashcard) => {
+    e.stopPropagation()
+    setEditingSetId(setId)
+    setEditingCardIndex(index)
+    setFormQuestion(card.question)
+    setFormAnswer(card.answer)
+    setFormImage(card.image)
+    setIsModalOpen(true)
+  }
+
+  const handleSaveCard = () => {
+    if (!formQuestion.trim() || !formAnswer.trim() || !editingSetId) return
+
+    const newCard: Flashcard = {
+      question: formQuestion.trim(),
+      answer: formAnswer.trim(),
+      image: formImage
+    }
+
+    if (editingCardIndex !== null) {
+      updateCard(editingSetId, editingCardIndex, newCard)
+    } else {
+      addCardToSet(editingSetId, newCard)
+    }
+    setIsModalOpen(false)
+  }
+
   // --- MANAGEMENT HANDLERS ---
   const handleEditSet = (e: React.MouseEvent, id: string, currentName: string) => {
     e.stopPropagation()
     const newName = prompt("Enter a new name for this set:", currentName)
     if (newName && newName.trim().length > 0) renameSet(id, newName.trim())
-  }
-
-  const handleAddCard = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation()
-    const question = prompt("Enter the new question:")
-    if (!question?.trim()) return
-    const answer = prompt("Enter the answer:")
-    if (!answer?.trim()) return
-    addCardToSet(id, { question: question.trim(), answer: answer.trim() })
-  }
-
-  const handleEditCard = (setId: string, index: number, currentQ: string, currentA: string) => {
-    const newQ = prompt("Edit Question:", currentQ) || currentQ
-    const newA = prompt("Edit Answer:", currentA) || currentA
-    updateCard(setId, index, { question: newQ.trim(), answer: newA.trim() })
   }
 
   const handleDeleteCard = (setId: string, index: number) => {
@@ -98,7 +146,6 @@ export function QuizMode({ onBack }: QuizModeProps) {
   }
 
   const nextCard = () => {
-    // Reset states for next card
     setShowAnswer(false)
     setInputAnswer("")
     setFeedback("idle")
@@ -112,20 +159,11 @@ export function QuizMode({ onBack }: QuizModeProps) {
 
   // --- ACTION HANDLERS ---
 
-  // 1. Flip Mode: Correct
-  const handleFlipCorrect = () => {
-    addCoins(1)
-    setScore(s => s + 1)
-    nextCard()
-  }
+  // 1. Flip Mode
+  const handleFlipCorrect = () => { addCoins(1); setScore(s => s + 1); nextCard() }
+  const handleFlipWrong = () => { setMissedQuestions(prev => [...prev, shuffledCards[currentIndex]]); nextCard() }
 
-  // 2. Flip Mode: Wrong
-  const handleFlipWrong = () => {
-    setMissedQuestions(prev => [...prev, shuffledCards[currentIndex]])
-    nextCard()
-  }
-
-  // 3. Type Mode: Submit
+  // 2. Type Mode
   const handleTypeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -142,19 +180,85 @@ export function QuizMode({ onBack }: QuizModeProps) {
     }
   }
 
-  // 4. Type Mode: Skip
   const handleTypeSkip = () => {
     setFeedback("skipped")
     setMissedQuestions(prev => [...prev, shuffledCards[currentIndex]])
-    // We do NOT call nextCard() here. We wait for user to read the answer then click Next.
+    // Waits for user to click "Next"
   }
 
   // --- VIEW 1: DASHBOARD ---
   if (gameMode === "dashboard") {
     return (
       <div className="min-h-screen p-6 relative z-10">
+        
+        {/* --- MODAL OVERLAY --- */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <Card className="w-full max-w-md p-6 bg-white shadow-2xl animate-in zoom-in-95">
+              <h2 className="text-xl font-bold mb-4">{editingCardIndex !== null ? "Edit Card" : "Add New Card"}</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-500 mb-1 block">Question</label>
+                  <Input 
+                    value={formQuestion} 
+                    onChange={(e) => setFormQuestion(e.target.value)} 
+                    placeholder="e.g. What is the powerhouse of the cell?"
+                  />
+                </div>
+
+                {/* IMAGE UPLOADER */}
+                <div>
+                  <label className="text-sm font-medium text-slate-500 mb-1 block">Image (Optional)</label>
+                  <div className="flex items-center gap-4">
+                    <Button 
+                      type="button" variant="outline" size="sm" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-slate-50 border-dashed border-2 text-slate-500"
+                    >
+                      <Upload className="w-4 h-4 mr-2" /> {formImage ? "Change Image" : "Upload Image"}
+                    </Button>
+                    
+                    {/* Hidden Input */}
+                    <input 
+                      type="file" ref={fileInputRef} className="hidden" 
+                      accept="image/*" onChange={handleImageUpload} 
+                    />
+
+                    {/* Preview */}
+                    {formImage && (
+                       <div className="relative w-12 h-12 rounded border overflow-hidden group">
+                          <img src={formImage} alt="Preview" className="w-full h-full object-cover" />
+                          <button 
+                             onClick={() => setFormImage(undefined)}
+                             className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                             <X className="w-4 h-4 text-white" />
+                          </button>
+                       </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-500 mb-1 block">Answer</label>
+                  <Input 
+                    value={formAnswer} 
+                    onChange={(e) => setFormAnswer(e.target.value)} 
+                    placeholder="e.g. Mitochondria"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveCard} disabled={!formQuestion || !formAnswer}>Save Card</Button>
+              </div>
+            </Card>
+          </div>
+        )}
+
         <div className="max-w-3xl mx-auto">
-          
           <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm mb-8 border border-white/50">
             <Button variant="ghost" onClick={onBack} className="mb-2 pl-0 hover:bg-transparent">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
@@ -204,7 +308,7 @@ export function QuizMode({ onBack }: QuizModeProps) {
 
                          {/* RIGHT: Management */}
                          <div className="flex gap-1 self-start">
-                            <Button variant="ghost" size="icon" onClick={(e) => handleAddCard(e, set.id)} title="Add Card">
+                            <Button variant="ghost" size="icon" onClick={(e) => openAddModal(e, set.id)} title="Add Card">
                                 <Plus className="w-5 h-5 text-gray-400 hover:text-green-600" />
                             </Button>
                             <Button variant="ghost" size="icon" onClick={(e) => handleEditSet(e, set.id, set.name)} title="Rename">
@@ -230,13 +334,20 @@ export function QuizMode({ onBack }: QuizModeProps) {
                         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                           {set.cards.map((card, index) => (
                             <div key={index} className="flex items-center justify-between p-2 bg-white border rounded shadow-sm">
-                              <div className="text-sm mr-2">
-                                <span className="font-bold text-blue-600">Q:</span> {card.question} <br/>
-                                <span className="font-bold text-green-600">A:</span> {card.answer}
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                {card.image && (
+                                   <div className="w-10 h-10 rounded bg-slate-100 flex-shrink-0 border">
+                                      <img src={card.image} alt="thumb" className="w-full h-full object-cover rounded" />
+                                   </div>
+                                )}
+                                <div className="text-sm mr-2 truncate">
+                                  <span className="font-bold text-blue-600">Q:</span> {card.question} <br/>
+                                  <span className="font-bold text-green-600">A:</span> {card.answer}
+                                </div>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 flex-shrink-0">
                                 <Button size="icon" variant="ghost" className="h-6 w-6" 
-                                  onClick={() => handleEditCard(set.id, index, card.question, card.answer)}>
+                                  onClick={() => openEditModal(null as any, set.id, index, card)}>
                                   <Pencil className="w-3 h-3 text-slate-400 hover:text-blue-600" />
                                 </Button>
                                 <Button size="icon" variant="ghost" className="h-6 w-6" 
@@ -289,9 +400,16 @@ export function QuizMode({ onBack }: QuizModeProps) {
                
                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                  {missedQuestions.map((card, idx) => (
-                   <div key={idx} className="bg-white p-3 rounded border border-red-100 text-left">
-                     <p className="text-sm font-bold text-slate-700 mb-1">Q: {card.question}</p>
-                     <p className="text-sm font-medium text-green-600">A: {card.answer}</p>
+                   <div key={idx} className="bg-white p-3 rounded border border-red-100 text-left flex gap-3">
+                     {card.image && (
+                         <div className="w-12 h-12 rounded bg-slate-100 flex-shrink-0 border">
+                             <img src={card.image} alt="Review" className="w-full h-full object-cover rounded" />
+                         </div>
+                     )}
+                     <div>
+                         <p className="text-sm font-bold text-slate-700 mb-1">Q: {card.question}</p>
+                         <p className="text-sm font-medium text-green-600">A: {card.answer}</p>
+                     </div>
                    </div>
                  ))}
                </div>
@@ -332,6 +450,13 @@ export function QuizMode({ onBack }: QuizModeProps) {
           {/* MAIN CARD */}
           <Card className="p-8 bg-white/95 backdrop-blur shadow-xl mb-6 min-h-[300px] flex flex-col justify-center border-t-4 border-t-blue-500">
             
+            {/* --- IMAGE DISPLAY AREA (Only shows if image exists) --- */}
+            {currentCard.image && (
+                <div className="mb-6 rounded-lg overflow-hidden border border-slate-200 max-h-64 flex justify-center bg-slate-50">
+                    <img src={currentCard.image} alt="Card visual" className="h-full object-contain" />
+                </div>
+            )}
+
             {/* --- FLASHCARD MODE --- */}
             {gameMode === "flip" && (
                 <>
@@ -394,12 +519,10 @@ export function QuizMode({ onBack }: QuizModeProps) {
                             placeholder="Type answer here..." 
                             value={inputAnswer}
                             onChange={(e) => setInputAnswer(e.target.value)}
-                            // Disable input if we are in "correct" or "skipped" state
                             disabled={feedback === "correct" || feedback === "skipped"}
                             className="h-14 text-lg"
                         />
                         
-                        {/* Only show "Check Answer" if we are actively guessing (idle or wrong) */}
                         {feedback === "idle" || feedback === "wrong" ? (
                             <Button type="submit" className="w-full h-14 text-lg bg-purple-600 hover:bg-purple-700 shadow-md">
                                 Check Answer
@@ -407,14 +530,12 @@ export function QuizMode({ onBack }: QuizModeProps) {
                         ) : null}
                     </form>
                     
-                    {/* --- NEXT CARD BUTTON (OUTSIDE FORM to prevent bugs) --- */}
                     {(feedback === "correct" || feedback === "skipped") && (
                          <Button onClick={nextCard} className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 shadow-md animate-in zoom-in-50 mt-4">
                              Next Card &rarr;
                          </Button> 
                     )}
                         
-                    {/* SKIP BUTTON */}
                     {feedback !== "correct" && feedback !== "skipped" && (
                         <Button type="button" variant="ghost" onClick={handleTypeSkip} className="w-full text-slate-400 hover:text-red-500 mt-2">
                             Skip this card
