@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { 
   ArrowLeft, Check, X, Trophy, Trash2, Pencil, Plus, 
   ChevronDown, ChevronUp, RotateCw, Keyboard, AlertCircle, Upload, 
-  Mic, MicOff // Added Mic icons
+  Mic, MicOff 
 } from "lucide-react"
 import { useSets, FlashcardSet, Flashcard } from "@/hooks/use-sets"
 import { useCoins } from "@/hooks/use-coins"
@@ -129,31 +129,19 @@ export function QuizMode({ onBack }: QuizModeProps) {
     setExpandedSetId(expandedSetId === id ? null : id)
   }
   
-  // --- VOICE LOGIC (New) ---
-  useEffect(() => {
-    // Check if browser supports speech recognition
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition()
-      recognition.continuous = false // Stop after one phrase
-      recognition.lang = "en-US"
-      recognition.interimResults = true
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript
-        setSpokenText(transcript)
-      }
-
-      recognition.onend = () => {
-        setIsListening(false)
-      }
-
-      recognitionRef.current = recognition
-    }
-  }, [])
+  // --- VOICE LOGIC (FIXED FOR MOBILE) ---
+  // We removed the useEffect here because it breaks mobile support.
+  // Initialization now happens directly in the click handler below.
 
   const toggleListening = () => {
+    // 1. If already listening, stop it.
+    if (isListening) {
+      if (recognitionRef.current) recognitionRef.current.stop()
+      setIsListening(false)
+      return
+    }
+
+    // 2. Initialize Speech Recognition specifically ON CLICK (Required for iOS/Android)
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
     if (!SpeechRecognition) {
@@ -161,16 +149,32 @@ export function QuizMode({ onBack }: QuizModeProps) {
       return
     }
 
-    if (!recognitionRef.current) return
+    const recognition = new SpeechRecognition()
+    recognition.lang = "en-US"
+    recognition.continuous = false 
+    recognition.interimResults = true
 
-    if (isListening) {
-      recognitionRef.current.stop()
-      setIsListening(false)
-    } else {
-      setSpokenText("") // Clear previous text
-      recognitionRef.current.start()
+    recognition.onstart = () => {
       setIsListening(true)
+      setSpokenText("")
     }
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript
+      setSpokenText(transcript)
+    }
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech error", event.error)
+      setIsListening(false)
+    }
+
+    recognition.onend = () => {
+      setIsListening(false)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
   }
 
   // --- GAME LOGIC ---
