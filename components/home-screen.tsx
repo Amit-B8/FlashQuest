@@ -165,7 +165,7 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
                         className="h-7 px-3 mt-2 text-[10px] font-bold bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-700 rounded-full shadow-sm"
                         onClick={() => feedPet(status.id)}
                       >
-                        FEED (10¢)
+                        FEED (10¢) TO ADD 30 MINS
                       </Button>
                     ) : (
                       <Button 
