@@ -5,31 +5,41 @@ import { useState, useEffect } from "react"
 export function useCoins() {
   const [coins, setCoins] = useState(0)
 
-  // 1. LOAD: Run this once when the game loads
-  useEffect(() => {
-    const stored = localStorage.getItem("flashquest-coins")
-    if (stored) {
-      setCoins(parseInt(stored, 10))
+  // Function to read from storage
+  const getCoins = () => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("flashquest-coins")
+      return saved ? parseInt(saved) : 0
     }
-  }, [])
-
-  // 2. SAVE (Add): We use 'prev' to make sure we have the latest number
-  const addCoins = (amount: number) => {
-    setCoins((prevCoins) => {
-      const newTotal = prevCoins + amount
-      localStorage.setItem("flashquest-coins", newTotal.toString())
-      return newTotal
-    })
+    return 0
   }
 
-  // 3. SAVE (Remove): Same here, using 'prevCoins' is safer
+  // 1. Listen for changes so Shop updates instantly
+  useEffect(() => {
+    // Load initial
+    setCoins(getCoins())
+
+    // Create a listener for when coins change anywhere in the app
+    const handleStorageChange = () => setCoins(getCoins())
+    
+    // Listen for our custom event
+    window.addEventListener("coins-updated", handleStorageChange)
+    
+    return () => window.removeEventListener("coins-updated", handleStorageChange)
+  }, [])
+
+  const addCoins = (amount: number) => {
+    const current = getCoins()
+    const newAmount = current + amount
+    localStorage.setItem("flashquest-coins", newAmount.toString())
+    setCoins(newAmount)
+    
+    // BROADCAST the change to the Shop component
+    window.dispatchEvent(new Event("coins-updated"))
+  }
+
   const removeCoins = (amount: number) => {
-    setCoins((prevCoins) => {
-      // Math.max(0, ...) ensures we never go below zero
-      const newTotal = Math.max(0, prevCoins - amount)
-      localStorage.setItem("flashquest-coins", newTotal.toString())
-      return newTotal
-    })
+    addCoins(-amount)
   }
 
   return { coins, addCoins, removeCoins }

@@ -1,12 +1,13 @@
-// lib/data.ts
+"use client"
 
-// 1. Define the rules for what an Avatar looks like
+// --- TYPES ---
+
 export type AvatarItem = {
   id: string
   name: string
   cost: number
   icon: string | null
-  image: string | null // <--- Explicitly saying this can be a string
+  image: string | null
 }
 
 export type BackgroundItem = {
@@ -16,7 +17,18 @@ export type BackgroundItem = {
   class: string
 }
 
-// 2. Apply the rules to the lists using ': AvatarItem[]'
+export type PetItem = {
+  id: string
+  name: string
+  type: "pet" | "plant"
+  price: number
+  icon: string
+  hoverAnim: string
+  interactAnim: string
+}
+
+// --- DATA LISTS ---
+
 export const AVATARS: AvatarItem[] = [
   { id: "default", name: "Default", cost: 0, icon: "🙂", image: null },
   { id: "robot", name: "Cool Robot", cost: 150, icon: "🤖", image: null },
@@ -51,4 +63,34 @@ export const BACKGROUNDS: BackgroundItem[] = [
   { id: "royal-purple", name: "Royal Purple", cost: 500, class: "bg-gradient-to-br from-purple-700 to-violet-900" },
   { id: "crimson", name: "Crimson", cost: 480, class: "bg-gradient-to-br from-red-700 to-rose-900" },
   { id: "deep-teal", name: "Deep Teal", cost: 420, class: "bg-gradient-to-br from-teal-700 to-cyan-900" },
+]
+
+export const PETS: PetItem[] = [
+  { 
+    id: "dog", 
+    name: "Buddy", 
+    type: "pet", 
+    price: 50, 
+    icon: "🐶", 
+    hoverAnim: "group-hover:animate-wiggle",
+    interactAnim: "animate-spin" 
+  },
+  { 
+    id: "snake", 
+    name: "Sly", 
+    type: "pet", 
+    price: 40, 
+    icon: "🐍", 
+    hoverAnim: "hover:scale-125", 
+    interactAnim: "animate-pulse" 
+  },
+  { 
+    id: "cactus", 
+    name: "Spike", 
+    type: "plant", 
+    price: 20, 
+    icon: "🌵", 
+    hoverAnim: "hover:animate-pulse", 
+    interactAnim: "animate-bounce" 
+  },
 ]

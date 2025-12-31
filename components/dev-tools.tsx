@@ -23,7 +23,7 @@ export function DevTools() {
 
   const handleAddCoins = () => {
     const current = Number(localStorage.getItem("flashquest-coins") || 0)
-    localStorage.setItem("flashquest-coins", (current + 1000).toString())
+    localStorage.setItem("flashquest-coins", (current + 10000).toString())
     window.location.reload()
   }
 
@@ -48,7 +48,7 @@ export function DevTools() {
       </div>
       <div className="flex flex-col gap-2">
         <Button onClick={handleAddCoins} className="bg-green-700 hover:bg-green-600">
-          <PlusCircle className="w-4 h-4 mr-2" /> Add 1000 Coins
+          <PlusCircle className="w-4 h-4 mr-2" /> Add 10000 Coins
         </Button>
         <Button onClick={handleResetAll} className="bg-red-700 hover:bg-red-600">
           <Trash2 className="w-4 h-4 mr-2" /> Reset All Data

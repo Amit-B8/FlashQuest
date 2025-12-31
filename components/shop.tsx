@@ -2,21 +2,21 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Trophy, Gamepad2, User, Palette, Check } from "lucide-react"
+import { ArrowLeft, Trophy, Gamepad2, User, Palette, Check, Leaf } from "lucide-react" // Added Leaf icon
 import { useCoins } from "@/hooks/use-coins"
 import { useShop } from "@/hooks/use-shop"
 import { useAvatar } from "@/hooks/use-avatar"
 import { useBackground } from "@/hooks/use-background"
+import { usePets } from "@/hooks/use-pets" // 1. Import usePets
 
-// 1. IMPORT DATA FROM YOUR NEW FILE
-import { AVATARS, BACKGROUNDS } from "@/lib/data"
+// IMPORT DATA
+import { AVATARS, BACKGROUNDS, PETS } from "@/lib/data" // 2. Import PETS data
 
 type ShopProps = {
   onBack: () => void
   onPlayGame: (game: string) => void
 }
 
-// We still keep GAMES here for now unless you move them to data.ts later
 const GAMES = [
   { id: "memory-game", name: "Memory Match", description: "Classic card game", cost: 10, icon: "🎴" },
 ]
@@ -26,8 +26,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
   const { unlockedGames, unlockGame, lockGame } = useShop()
   const { ownedAvatars, currentAvatar, buyAvatar, equipAvatar } = useAvatar()
   const { ownedBackgrounds, activeBackground, buyBackground, equipBackground } = useBackground()
-
-  // --- DELETED: renderBackground function (Main Page handles this now) ---
+  const { ownedPets, buyPet } = usePets() // 3. Use the Pets hook
 
   const handlePurchaseGame = (id: string, cost: number) => {
     if (coins >= cost && !unlockedGames.includes(id)) {
@@ -47,11 +46,18 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
     }
   }
 
+  // 4. Handle Pet Purchase
+  const handlePurchasePet = (id: string, cost: number) => {
+    // Check if pet is already owned (we only allow one of each pet for now)
+    const isOwned = ownedPets.some(p => p.id === id)
+    if (coins >= cost && !isOwned) {
+      buyPet(id); // usePets hook handles the coin removal and logic
+    }
+  }
+
   return (
     <div className="min-h-screen relative pb-20">
       
-      {/* --- DELETED: {renderBackground()} --- */}
-
       {/* FIXED HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm p-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
@@ -107,7 +113,40 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
           </div>
         </div>
 
-        {/* SECTION 2: AVATARS */}
+        {/* NEW SECTION 2: PETS & PLANTS */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-4 border-b border-black/10 pb-2">
+            <Leaf className="w-6 h-6 text-green-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Pets & Plants</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {PETS.map((pet) => {
+              const isOwned = ownedPets.some(p => p.id === pet.id)
+              return (
+                <Card key={pet.id} className={`p-4 flex flex-col items-center text-center bg-white/90 ${isOwned ? 'opacity-75' : ''}`}>
+                  <div className="h-16 w-16 mb-4 flex items-center justify-center text-6xl group">
+                    <span className={`transition-transform duration-300 ${pet.hoverAnim}`}>
+                      {pet.icon}
+                    </span>
+                  </div>
+                  <h3 className="font-bold mb-1">{pet.name}</h3>
+                  <p className="text-xs text-slate-500 uppercase font-semibold mb-2">{pet.type}</p>
+                  <p className="text-sm text-gray-500 mb-4">Cost: {pet.price} Coins</p>
+                  
+                  <Button 
+                    onClick={() => handlePurchasePet(pet.id, pet.price)} 
+                    disabled={isOwned || coins < pet.price}
+                    className={`w-full ${isOwned ? 'bg-slate-200 text-slate-500' : 'bg-green-500 hover:bg-green-600'}`}
+                  >
+                    {isOwned ? "Already Owned" : "Adopt"}
+                  </Button>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* SECTION 3: AVATARS */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-4 border-b border-black/10 pb-2">
             <User className="w-6 h-6 text-blue-600" />
@@ -119,8 +158,6 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
               const isActive = currentAvatar === avatar.id
               return (
                 <Card key={avatar.id} className={`p-4 flex flex-col items-center text-center bg-white/90 ${isActive ? 'border-4 border-blue-500' : ''}`}>
-                  
-                  {/* DISPLAY LOGIC */}
                   <div className="h-16 w-16 mb-4 relative flex items-center justify-center">
                     {avatar.image ? (
                       <img 
@@ -132,10 +169,8 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
                       <div className="text-6xl">{avatar.icon}</div>
                     )}
                   </div>
-
                   <h3 className="font-bold mb-1">{avatar.name}</h3>
                   <p className="text-sm text-gray-500 mb-4">{avatar.cost === 0 ? "Free" : `Cost: ${avatar.cost}`}</p>
-                  
                   {isOwned ? (
                     <Button 
                       variant={isActive ? "secondary" : "default"} 
@@ -160,7 +195,7 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
           </div>
         </div>
 
-        {/* SECTION 3: BACKGROUNDS */}
+        {/* SECTION 4: BACKGROUNDS */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-4 border-b border-black/10 pb-2">
             <Palette className="w-6 h-6 text-orange-600" />
@@ -172,13 +207,10 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
               const isActive = activeBackground === bg.id
               return (
                 <Card key={bg.id} className={`overflow-hidden bg-white/90 ${isActive ? 'ring-4 ring-orange-500' : ''}`}>
-                  {/* Preview Area */}
                   <div className={`h-24 w-full ${bg.class}`} />
-                  
                   <div className="p-4 text-center">
                     <h3 className="font-bold mb-1">{bg.name}</h3>
                     <p className="text-sm text-gray-500 mb-3">{bg.cost === 0 ? "Free" : `Cost: ${bg.cost}`}</p>
-                    
                     {isOwned ? (
                       <Button 
                         variant={isActive ? "secondary" : "default"} 
@@ -203,7 +235,6 @@ export function Shop({ onBack, onPlayGame }: ShopProps) {
             })}
           </div>
         </div>
-
       </div>
     </div>
   )
