@@ -72,7 +72,8 @@ export const PETS: PetItem[] = [
     type: "pet", 
     price: 50, 
     icon: "🐶", 
-    hoverAnim: "group-hover:animate-wiggle",
+    // Changed to group-hover to stop spazzing
+    hoverAnim: "group-hover:animate-wiggle", 
     interactAnim: "animate-spin" 
   },
   { 
@@ -81,7 +82,8 @@ export const PETS: PetItem[] = [
     type: "pet", 
     price: 40, 
     icon: "🐍", 
-    hoverAnim: "hover:scale-125", 
+    // Changed scale to wiggle so you can see it move better
+    hoverAnim: "group-hover:animate-wiggle", 
     interactAnim: "animate-pulse" 
   },
   { 
@@ -90,7 +92,8 @@ export const PETS: PetItem[] = [
     type: "plant", 
     price: 20, 
     icon: "🌵", 
-    hoverAnim: "hover:animate-pulse", 
+    // Changed to group-hover
+    hoverAnim: "group-hover:animate-pulse", 
     interactAnim: "animate-bounce" 
   },
 ]
