@@ -15,7 +15,7 @@ type CreateSetProps = {
 }
 
 export function CreateSet({ onBack }: CreateSetProps) {
-  const { addSet, sets } = useSets()
+  const { addSet, sets, updateCard, deleteCard, addCardToSet } = useSets()
   
   // Form State
   const [setName, setSetName] = useState("")
@@ -29,6 +29,73 @@ export function CreateSet({ onBack }: CreateSetProps) {
   // UI State
   const [expandedSetId, setExpandedSetId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // --- ADDED: MODAL STATE FOR EDITING ---
+  const modalFileInputRef = useRef<HTMLInputElement>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null)
+  const [editingSetId, setEditingSetId] = useState<string | null>(null)
+  const [formQuestion, setFormQuestion] = useState("")
+  const [formAnswer, setFormAnswer] = useState("")
+  const [formImage, setFormImage] = useState<string | undefined>(undefined)
+
+  // --- ADDED: MODAL & EXISTING CARD HANDLERS ---
+  const openEditModal = (e: React.MouseEvent, setId: string, index: number, card: Flashcard) => {
+    e.stopPropagation() // Prevents the set from collapsing when you click edit
+    setEditingSetId(setId)
+    setEditingCardIndex(index)
+    setFormQuestion(card.question)
+    setFormAnswer(card.answer)
+    setFormImage(card.image)
+    setIsModalOpen(true)
+  }
+
+  const openAddModal = (e: React.MouseEvent, setId: string) => {
+    e.stopPropagation()
+    setEditingSetId(setId)
+    setEditingCardIndex(null) // null means we are adding
+    setFormQuestion("")
+    setFormAnswer("")
+    setFormImage(undefined)
+    setIsModalOpen(true)
+  }
+
+  const handleModalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 500000) { 
+        alert("Image is too large! Please use an image under 500KB.")
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => setFormImage(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSaveModalCard = () => {
+    if (!formQuestion.trim() || !formAnswer.trim() || !editingSetId) return
+
+    const newCard: Flashcard = {
+      question: formQuestion.trim(),
+      answer: formAnswer.trim(),
+      image: formImage
+    }
+
+    if (editingCardIndex !== null) {
+      updateCard(editingSetId, editingCardIndex, newCard) // Editing
+    } else {
+      addCardToSet(editingSetId, newCard) // Adding new
+    }
+    setIsModalOpen(false)
+  }
+
+  const handleDeleteExistingCard = (e: React.MouseEvent, setId: string, index: number) => {
+    e.stopPropagation()
+    if (confirm("Delete this card permanently?")) {
+      deleteCard(setId, index)
+    }
+  }
 
   // --- IMAGE HANDLING LOGIC ---
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,6 +178,71 @@ export function CreateSet({ onBack }: CreateSetProps) {
 
   return (
     <div className="min-h-screen p-6 relative z-10">
+      {/* --- ADDED: EDIT MODAL OVERLAY --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <Card className="w-full max-w-md p-6 bg-white shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-xl font-bold mb-4">
+              {editingCardIndex !== null ? "Edit Card" : "Add New Card"}
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-500 mb-1 block">Question</label>
+                <Textarea 
+                  value={formQuestion} 
+                  onChange={(e) => setFormQuestion(e.target.value)} 
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-500 mb-1 block">Image (Optional)</label>
+                <div className="flex items-center gap-4">
+                  <Button 
+                    type="button" variant="outline" size="sm" 
+                    onClick={() => modalFileInputRef.current?.click()}
+                    className="bg-slate-50 border-dashed border-2 text-slate-500"
+                  >
+                    <Upload className="w-4 h-4 mr-2" /> {formImage ? "Change Image" : "Upload Image"}
+                  </Button>
+                  
+                  <input 
+                    type="file" ref={modalFileInputRef} className="hidden" 
+                    accept="image/*" onChange={handleModalImageUpload} 
+                  />
+
+                  {formImage && (
+                    <div className="relative w-12 h-12 rounded border overflow-hidden group">
+                      <img src={formImage} alt="Preview" className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => setFormImage(undefined)}
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-500 mb-1 block">Answer</label>
+                <Textarea 
+                  value={formAnswer} 
+                  onChange={(e) => setFormAnswer(e.target.value)} 
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveModalCard} disabled={!formQuestion || !formAnswer}>Save Card</Button>
+            </div>
+          </Card>
+        </div>
+      )}
       <div className="max-w-3xl mx-auto">
         
         {/* Header */}
@@ -269,20 +401,47 @@ export function CreateSet({ onBack }: CreateSetProps) {
 
                     {isOpen && (
                       <div className="bg-slate-50 border-t border-slate-100 p-4 animate-in slide-in-from-top-2">
-                        <p className="text-xs font-bold text-slate-400 uppercase mb-3">Cards Preview</p>
+                        
+                        {/* --- ADDED: The Add Card Button Header --- */}
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-xs font-bold text-slate-400 uppercase">Cards Preview</p>
+                          <Button size="sm" variant="outline" onClick={(e) => openAddModal(e, set.id)} className="h-7 text-xs">
+                            <Plus className="w-3 h-3 mr-1" /> Add Card
+                          </Button>
+                        </div>
+
                         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                           {set.cards.map((c, i) => (
-                            <div key={i} className="text-sm p-2 bg-white border rounded shadow-sm flex items-center gap-3">
-                              {c.image && (
-                                <div className="w-8 h-8 bg-slate-100 rounded border flex-shrink-0 overflow-hidden">
-                                    <img src={c.image} alt="Thumb" className="w-full h-full object-cover" />
+                            <div key={i} className="text-sm p-2 bg-white border rounded shadow-sm flex items-center justify-between gap-3">
+                              
+                              {/* ADDED flex-1 HERE TO FIX SPACING */}
+                              <div className="flex items-center gap-3 overflow-hidden flex-1">
+                                {c.image && (
+                                  <div className="w-8 h-8 bg-slate-100 rounded border flex-shrink-0 overflow-hidden">
+                                      <img src={c.image} alt="Thumb" className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                <div>
+                                    <span className="font-bold text-blue-600">Q:</span> {c.question} <br/>
+                                    <span className="font-bold text-green-600">A:</span> {c.answer}
                                 </div>
-                              )}
-                              <div>
-                                  <span className="font-bold text-blue-600">Q:</span> {c.question} <br/>
-                                  <span className="font-bold text-green-600">A:</span> {c.answer}
                               </div>
-                            </div>
+                              {/* --- ADDED: EDIT/DELETE BUTTONS FOR EXISTING CARDS --- */}
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button 
+                                  size="icon" variant="ghost" className="h-6 w-6" 
+                                  onClick={(e) => openEditModal(e, set.id, i, c)}
+                                >
+                                  <Pencil className="w-3 h-3 text-slate-400 hover:text-blue-600" />
+                                </Button>
+                                <Button 
+                                  size="icon" variant="ghost" className="h-6 w-6" 
+                                  onClick={(e) => handleDeleteExistingCard(e, set.id, i)}
+                                >
+                                  <Trash2 className="w-3 h-3 text-slate-400 hover:text-red-600" />
+                                </Button>
+                              </div>
+                              </div>
                           ))}
                         </div>
                       </div>

@@ -405,7 +405,7 @@ export function QuizMode({ onBack }: QuizModeProps) {
                               </div>
                               <div className="flex gap-1 flex-shrink-0">
                                 <Button size="icon" variant="ghost" className="h-6 w-6" 
-                                  onClick={() => openEditModal(null as any, set.id, index, card)}>
+                                  onClick={(e) => openEditModal(e, set.id, index, card)}>
                                   <Pencil className="w-3 h-3 text-slate-400 hover:text-blue-600" />
                                 </Button>
                                 <Button size="icon" variant="ghost" className="h-6 w-6" 
