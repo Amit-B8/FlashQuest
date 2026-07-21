@@ -19,6 +19,7 @@ type ShopProps = {
 
 const GAMES = [
   { id: "memory-game", name: "Memory Match", description: "Classic card game", cost: 10, icon: "🎴" },
+  { id: "wanted-game", name: "Wanted!", description: "Find the hidden emoji in 15s!", cost: 15, icon: "🔍" },
 ]
 
 export function Shop({ onBack, onPlayGame }: ShopProps) {

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { MemoryGame } from "@/components/memory-game"
+import { WantedGame } from "@/components/wanted-game"
 import { HomeScreen } from "@/components/home-screen"
 import { CreateSet } from "@/components/create-set"
 import { QuizMode } from "@/components/quiz-mode"
@@ -9,7 +10,7 @@ import { Shop } from "@/components/shop"
 import { BACKGROUNDS } from "@/lib/data"
 import { useBackground } from "@/hooks/use-background"
 
-export type Screen = "home" | "create" | "test" | "shop" | "memory-game"
+export type Screen = "home" | "create" | "test" | "shop" | "memory-game" | "wanted-game"
 
 export default function Page() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home")
@@ -22,6 +23,8 @@ export default function Page() {
   const handlePlayGame = (gameId: string) => {
     if (gameId === "memory-game") {
         setCurrentScreen("memory-game")
+    } else if (gameId === "wanted-game") {
+        setCurrentScreen("wanted-game")
     }
   }
 
@@ -43,6 +46,7 @@ export default function Page() {
         {currentScreen === "test" && <QuizMode onBack={() => navigateTo("home")} />}
         {currentScreen === "shop" && <Shop onBack={() => navigateTo("home")} onPlayGame={handlePlayGame} />}
         {currentScreen === "memory-game" && <MemoryGame onBack={() => navigateTo("shop")} />}
+        {currentScreen === "wanted-game" && <WantedGame onBack={() => navigateTo("shop")} />}
       </div>
 
       {/* 3. REAL FOOTER: Sits below content, center aligned, darker text */}
